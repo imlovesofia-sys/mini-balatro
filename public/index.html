@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Blefe — Roguelike de Pôquer</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div id="app">
+    <section id="screen-menu" class="screen active">
+      <h1 class="title">BLEFE</h1>
+      <p class="subtitle">Roguelike de Pôquer</p>
+      <div class="menu-buttons">
+        <button id="btn-start">Jogar</button>
+        <button id="btn-podium-menu">Pódio</button>
+        <button id="btn-howto">Como Jogar</button>
+      </div>
+    </section>
+
+    <section id="screen-howto" class="screen">
+      <h2>Como Jogar</h2>
+      <div class="howto-text">
+        <p><strong>Objetivo:</strong> Sobreviva 3 blinds (Pequeno, Grande, Chefe) batendo a meta de fichas de cada um. Sua pontuação total vai pro pódio!</p>
+        <p><strong>Rodada:</strong> Você tem 4 mãos e 3 descartes. Selecione de 1 a 5 cartas e clique <em>Jogar</em> para pontuar, ou <em>Descartar</em> para trocá-las.</p>
+        <p><strong>Pontuação:</strong> <em>(Fichas da mão + Fichas das cartas + Efeitos) × (Mult da mão + Efeitos)</em></p>
+        <p><strong>Loja:</strong> Entre blinds, compre Curingas e cartas consumíveis (Tarô/Espectral) com o dinheiro ganho.</p>
+        <p><strong>Curingas:</strong> Máximo 5 na ativa. Podem dar +fichas, +mult, ×mult ou efeitos especiais.</p>
+        <p><strong>Consumíveis:</strong> Máximo 2 na bolsa. Clique para usar.</p>
+        <p><strong>Blind do Chefe:</strong> Tem um efeito especial aleatório que dificulta a rodada.</p>
+      </div>
+      <button id="btn-back-howto">Voltar</button>
+    </section>
+
+    <section id="screen-game" class="screen">
+      <div id="game-layout">
+        <aside id="left-panel">
+          <div class="panel-box" id="blind-box">
+            <div id="blind-name">Blind Pequeno</div>
+            <div id="blind-target">Meta: 300</div>
+          </div>
+          <div class="panel-box" id="score-box">
+            <div class="box-label">Pontuação</div>
+            <div id="round-score">0</div>
+            <div class="progress-track"><div id="progress-fill"></div></div>
+            <div class="box-sub">Meta: <span id="target-value">300</span></div>
+          </div>
+          <div class="panel-box" id="eval-box">
+            <div id="eval-hand-name">Selecione cartas</div>
+            <div id="eval-calc">
+              <div id="eval-chips" class="calc-chip chips">0</div>
+              <div class="calc-x">×</div>
+              <div id="eval-mult" class="calc-chip mult">0</div>
+            </div>
+            <div id="eval-total"></div>
+          </div>
+        </aside>
+
+        <main id="center-panel">
+      <div id="jokers-area">
+        <span class="section-title">Curingas:</span>
+        <div id="jokers-list"></div>
+      </div>
+
+      <div id="sort-buttons">
+        <span>Ordenar:</span>
+        <button id="btn-sort-suit" class="sort-btn">Por Naipe</button>
+        <button id="btn-sort-rank" class="sort-btn">Por Valor (2→A)</button>
+      </div>
+
+      <div id="hand-area">
+        <div id="hand-cards"></div>
+      </div>
+
+      <div id="action-buttons">
+        <button id="btn-play-hand">Jogar</button>
+        <button id="btn-discard">Descartar</button>
+      </div>
+
+      <div id="consumables-area">
+        <span class="section-title">Consumíveis:</span>
+        <div id="consumables-list"></div>
+      </div>
+        </main>
+
+        <aside id="right-panel">
+          <div class="panel-box stat" id="hands-left">Mãos: 4</div>
+          <div class="panel-box stat" id="discards-left">Descartes: 3</div>
+          <div class="panel-box stat" id="money">$4</div>
+          <div class="panel-box" id="deck-box">
+            <div id="deck-pile"></div>
+            <div id="deck-count">52</div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="screen-shop" class="screen">
+      <h2>Loja</h2>
+      <div id="shop-money">Dinheiro: $4</div>
+      <div id="shop-items"></div>
+      <div class="shop-actions">
+        <button id="btn-reroll">Reroll ($5)</button>
+        <button id="btn-leave-shop">Sair da Loja</button>
+      </div>
+    </section>
+
+    <section id="screen-gameover" class="screen">
+      <h2 id="gameover-title">Fim de Jogo</h2>
+      <p id="gameover-score">Pontuação final: 0</p>
+      <div id="gameover-form">
+        <label for="player-name">Seu nome:</label>
+        <input id="player-name" type="text" maxlength="20" placeholder="Digite seu nome..." />
+        <button id="btn-save-score">Salvar no Pódio</button>
+      </div>
+      <div class="gameover-buttons">
+        <button id="btn-podium-go">Ver Pódio</button>
+        <button id="btn-menu">Menu</button>
+      </div>
+    </section>
+
+    <section id="screen-podium" class="screen">
+      <h2>🏆 Pódio</h2>
+      <ol id="podium-list"></ol>
+      <button id="btn-back-podium">Voltar</button>
+    </section>
+  </div>
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>
