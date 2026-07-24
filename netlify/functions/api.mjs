@@ -1,65 +1,50 @@
-import fs from 'fs';
-import path from 'path';
-
-const SCORES_FILE = '/tmp/scores.json';
-
-function loadScores() {
-  try {
-    return JSON.parse(fs.readFileSync(SCORES_FILE, 'utf8'));
-  } catch {
-    return [];
-  }
-}
-
-function saveScores(scores) {
-  fs.writeFileSync(SCORES_FILE, JSON.stringify(scores, null, 2));
-}
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://slrfiqtnhfklztpjliuc.supabase.co';
+const SUPABASE_KEY = process.env.SUPABASE_KEY || '';
 
 export const handler = async (event) => {
+  const headers = {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${SUPABASE_KEY}`
+  };
+
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers, body: '' };
+  }
+
   if (event.httpMethod === 'GET') {
-    const scores = loadScores();
-    scores.sort((a, b) => b.score - a.score);
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
-      body: JSON.stringify(scores.slice(0, 10))
-    };
+    try {
+      const r = await fetch(
+        `${SUPABASE_URL}/rest/v1/scores?select=*&order=score.desc&limit=10`,
+        { headers }
+      );
+      const scores = await r.json();
+      return { statusCode: 200, headers, body: JSON.stringify(scores) };
+    } catch (err) {
+      return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
+    }
   }
 
   if (event.httpMethod === 'POST') {
     try {
       const { name, score } = JSON.parse(event.body || '{}');
       if (typeof name !== 'string' || typeof score !== 'number' || !isFinite(score) || score < 0) {
-        return {
-          statusCode: 400,
-          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-          body: JSON.stringify({ error: 'Dados inválidos' })
-        };
+        return { statusCode: 400, headers, body: JSON.stringify({ error: 'Dados inválidos' }) };
       }
-      const scores = loadScores();
-      scores.push({
-        name: name.trim().slice(0, 20) || 'Anônimo',
-        score: Math.floor(score),
-        date: new Date().toISOString()
+      await fetch(`${SUPABASE_URL}/rest/v1/scores`, {
+        method: 'POST',
+        headers: { ...headers, 'Prefer': 'return=minimal' },
+        body: JSON.stringify({
+          name: name.trim().slice(0, 20) || 'Anônimo',
+          score: Math.floor(score)
+        })
       });
-      scores.sort((a, b) => b.score - a.score);
-      saveScores(scores.slice(0, 100));
-      return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ ok: true })
-      };
-    } catch {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ error: 'JSON inválido' })
-      };
+      return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
+    } catch (err) {
+      return { statusCode: 400, headers, body: JSON.stringify({ error: err.message }) };
     }
   }
 
-  return { statusCode: 405, body: 'Method not allowed' };
+  return { statusCode: 405, headers, body: 'Method not allowed' };
 };
