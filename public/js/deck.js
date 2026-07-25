@@ -30,6 +30,12 @@ export function drawCards(state, count) {
   return drawn;
 }
 
+export function clearNewFlags(hand) {
+  for (const card of hand) {
+    card._new = false;
+  }
+}
+
 export function discardFromHand(state, indices) {
   const discarded = [];
   const sorted = [...indices].sort((a, b) => b - a);

@@ -1,4 +1,14 @@
 import { SUIT_SYMBOL, RANK_VALUE } from './constants.js';
+import { sfxCardScore, sfxJokerProc, sfxTotalCalc } from './audio.js';
+
+function getJokerImageStyle(joker) {
+  return {
+    backgroundImage: `url('/img/jokers/${joker.id}.png')`,
+    backgroundSize: 'contain',
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'center'
+  };
+}
 
 export function cardToHTML(card, selected = false) {
   const symbol = SUIT_SYMBOL[card.suit];
@@ -11,7 +21,7 @@ export function cardToHTML(card, selected = false) {
   </div>`;
 }
 
-export function renderHand(hand, selectedIndices, container, newCount = 0, onSelectionChange = null) {
+export function renderHand(hand, selectedIndices, container, newCount = 0, onSelectionChange = null, hasExtraSlot = false) {
   container.innerHTML = '';
   const firstNew = hand.length - newCount;
   hand.forEach((card, i) => {
@@ -21,13 +31,19 @@ export function renderHand(hand, selectedIndices, container, newCount = 0, onSel
       div.classList.add('deal-in');
       div.style.animationDelay = `${(i - firstNew) * 70}ms`;
     }
-    div.innerHTML = cardToHTML(card, selectedIndices.has(i));
+    const isSelected = selectedIndices.has(i);
+    const isExtraSelected = isSelected && hasExtraSlot && selectedIndices.size > 5;
+    div.innerHTML = cardToHTML(card, isSelected);
+    if (isExtraSelected) {
+      div.classList.add('extra-slot-selected');
+    }
     div.addEventListener('click', () => {
       if (selectedIndices.has(i)) selectedIndices.delete(i);
       else {
-        if (selectedIndices.size < 5) selectedIndices.add(i);
+        const maxSelect = hasExtraSlot ? 6 : 5;
+        if (selectedIndices.size < maxSelect) selectedIndices.add(i);
       }
-      renderHand(hand, selectedIndices, container, 0, onSelectionChange);
+      renderHand(hand, selectedIndices, container, 0, onSelectionChange, hasExtraSlot);
       if (onSelectionChange) onSelectionChange();
     });
     container.appendChild(div);
@@ -56,8 +72,14 @@ export function renderJokers(jokers, container) {
   jokers.forEach(j => {
     const div = document.createElement('div');
     div.className = `joker rarity-${j.rarity}`;
-    div.innerHTML = `<div class="joker-name">${j.name}</div><div class="joker-desc">${j.desc}</div>`;
-    div.title = j.desc;
+    Object.assign(div.style, getJokerImageStyle(j));
+    div.innerHTML = `
+      <div class="joker-name">${j.name}</div>
+      <div class="joker-tooltip">
+        <div class="tooltip-title">${j.name}</div>
+        <div class="tooltip-desc">${j.desc}</div>
+      </div>
+    `;
     container.appendChild(div);
   });
 }
@@ -73,34 +95,53 @@ export function renderConsumables(consumables, container, onUse) {
   });
 }
 
-export function renderShopItems(items, container, onBuy) {
-  container.innerHTML = '';
+export function renderShopItems(items, jokersContainer, consumablesContainer, onBuy) {
+  jokersContainer.innerHTML = '';
+  consumablesContainer.innerHTML = '';
+
   items.forEach((item, i) => {
     if (!item || item.sold) {
       const placeholder = document.createElement('div');
       placeholder.className = 'shop-slot empty';
       placeholder.textContent = 'Vendido';
-      container.appendChild(placeholder);
+      if (item && item.kind === 'joker') {
+        jokersContainer.appendChild(placeholder);
+      } else {
+        consumablesContainer.appendChild(placeholder);
+      }
       return;
     }
+
     const div = document.createElement('div');
     div.className = 'shop-item';
     let inner = '';
+
     if (item.kind === 'joker') {
-      inner = `<div class="joker rarity-${item.data.rarity}">
-        <div class="joker-name">${item.data.name}</div>
-        <div class="joker-desc">${item.data.desc}</div>
+      const j = item.data;
+      const styleObj = getJokerImageStyle(j);
+      const styleStr = Object.entries(styleObj).map(([k, v]) => `${k.replace(/([A-Z])/g, '-$1').toLowerCase()}:${v}`).join(';');
+      inner = `<div class="joker rarity-${j.rarity}" style="${styleStr}">
+        <div class="joker-name">${j.name}</div>
+        <div class="joker-tooltip">
+          <div class="tooltip-title">${j.name}</div>
+          <div class="tooltip-desc">${j.desc}</div>
+        </div>
       </div>`;
+      inner += `<div class="price">$${item.price}</div>`;
+      div.innerHTML = inner;
+      div.addEventListener('click', () => onBuy(i));
+      jokersContainer.appendChild(div);
+
     } else {
       inner = `<div class="consumable-shop">
         <div class="consumable-name">${item.data.name}</div>
         <div class="consumable-desc">${item.data.desc}</div>
       </div>`;
+      inner += `<div class="price">$${item.price}</div>`;
+      div.innerHTML = inner;
+      div.addEventListener('click', () => onBuy(i));
+      consumablesContainer.appendChild(div);
     }
-    inner += `<div class="price">$${item.price}</div>`;
-    div.innerHTML = inner;
-    div.addEventListener('click', () => onBuy(i));
-    container.appendChild(div);
   });
 }
 
@@ -164,6 +205,7 @@ export async function runScoringSequence({ handContainer, selectedArr, details, 
 
   for (const ev of details.events) {
     if (ev.type === 'card') {
+      sfxCardScore();
       const w = wrappers[selectedArr[ev.cardIndex]];
       if (w) {
         w.classList.remove('card-proc');
@@ -186,22 +228,25 @@ export async function runScoringSequence({ handContainer, selectedArr, details, 
       }
       await sleep(200);
     } else if (ev.type === 'joker') {
+      sfxJokerProc();
       const jEl = jokersContainer.children[ev.jokerIndex];
       if (jEl) {
         jEl.classList.remove('joker-proc');
         void jEl.offsetWidth;
         jEl.classList.add('joker-proc');
-        const label = ev.kind === 'xmult' ? `×${ev.value}` : `+${ev.value}`;
+        const label = ev.kind === 'xmult' ? `×${ev.value}` : ev.kind === 'money' ? `$${ev.value}` : `+${ev.value}`;
         floatText(jEl, label, ev.kind);
       }
       chipsEl.textContent = ev.chips;
       multEl.textContent = round2(ev.mult);
-      bumpNum(ev.kind === 'chips' ? chipsEl : multEl);
+      if (ev.kind === 'chips' || ev.kind === 'money') bumpNum(chipsEl);
+      else bumpNum(multEl);
       await sleep(380);
     }
   }
 
   await sleep(200);
+  sfxTotalCalc();
   totalEl.textContent = `= ${details.score.toLocaleString('pt-BR')}`;
   totalEl.classList.remove('total-pop');
   void totalEl.offsetWidth;

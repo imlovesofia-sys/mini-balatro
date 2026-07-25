@@ -42,7 +42,9 @@ function evaluateFive(cards) {
 
   if (cards.length >= 5 && isFlush && isStraight) {
     const highCards = sorted.slice(-5);
-    const isRoyal = highCards.every(c => ['10', 'J', 'Q', 'K', 'A'].includes(c.rank));
+    const royalRanks = new Set(['10', 'J', 'Q', 'K', 'A']);
+    const isRoyal = highCards.length === 5 && highCards.every(c => royalRanks.has(c.rank))
+      && new Set(highCards.map(c => c.rank)).size === 5;
     return {
       type: isRoyal ? POKER_HANDS.find(h => h.id === 'royalFlush') : POKER_HANDS.find(h => h.id === 'straightFlush'),
       cards: highCards
@@ -53,7 +55,8 @@ function evaluateFive(cards) {
     return { type: POKER_HANDS.find(h => h.id === 'four'), cards: cards.filter(c => c.rank === fourRank) };
   }
   if (counts[0] === 3 && counts[1] === 2) {
-    return { type: POKER_HANDS.find(h => h.id === 'fullHouse'), cards: [...cards] };
+    const threeRank = topRanks[0][0];
+    return { type: POKER_HANDS.find(h => h.id === 'fullHouse'), cards: cards.filter(c => c.rank === threeRank) };
   }
   if (isFlush) {
     return { type: POKER_HANDS.find(h => h.id === 'flush'), cards: sorted.slice(-5) };

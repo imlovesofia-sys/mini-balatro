@@ -7,24 +7,49 @@ import {
 import { evaluateBestHand } from './poker.js';
 import { fetchScores, submitScore } from './api.js';
 import * as Game from './game.js';
+import {
+  startMusic, toggleMusic, isMusicMuted,
+  toggleSfx, isSfxMuted,
+  sfxClick, sfxBuy, sfxWin, sfxLose, sfxDeal, sfxDiscard
+} from './audio.js';
 
 export function setupApp() {
+  const btnMusic = document.getElementById('btn-music');
+  const btnSfx = document.getElementById('btn-sfx');
+  btnMusic.addEventListener('click', () => {
+    sfxClick();
+    const on = toggleMusic();
+    btnMusic.classList.toggle('muted', !on);
+    btnMusic.textContent = on ? '♫' : '♪';
+  });
+  btnSfx.addEventListener('click', () => {
+    const on = toggleSfx();
+    btnSfx.classList.toggle('muted', !on);
+    btnSfx.textContent = on ? '🔊' : '🔇';
+    if (on) sfxClick();
+  });
+
   document.getElementById('btn-start').addEventListener('click', () => {
+    sfxClick();
+    startMusic();
     Game.startRun();
     renderGame();
     showScreen('screen-game');
   });
 
   document.getElementById('btn-podium-menu').addEventListener('click', async () => {
+    sfxClick();
     await showPodium();
     showScreen('screen-podium');
   });
 
   document.getElementById('btn-howto').addEventListener('click', () => {
+    sfxClick();
     showScreen('screen-howto');
   });
 
   document.getElementById('btn-back-howto').addEventListener('click', () => {
+    sfxClick();
     showScreen('screen-menu');
   });
 
@@ -38,11 +63,18 @@ export function setupApp() {
 
   document.getElementById('btn-save-score').addEventListener('click', onSaveScore);
   document.getElementById('btn-podium-go').addEventListener('click', async () => {
+    sfxClick();
     await showPodium();
     showScreen('screen-podium');
   });
-  document.getElementById('btn-menu').addEventListener('click', () => showScreen('screen-menu'));
-  document.getElementById('btn-back-podium').addEventListener('click', () => showScreen('screen-menu'));
+  document.getElementById('btn-menu').addEventListener('click', () => {
+    sfxClick();
+    showScreen('screen-menu');
+  });
+  document.getElementById('btn-back-podium').addEventListener('click', () => {
+    sfxClick();
+    showScreen('screen-menu');
+  });
 }
 
 let busy = false;
@@ -61,7 +93,7 @@ export function renderGame(opts = {}) {
   document.getElementById('money').textContent = `$${state.money}`;
   document.getElementById('deck-count').textContent = `${state.deck.length} cartas`;
 
-  renderHand(state.hand, state.selectedIndices, document.getElementById('hand-cards'), opts.newCards || 0, updateEvalPreview);
+  renderHand(state.hand, state.selectedIndices, document.getElementById('hand-cards'), opts.newCards || 0, updateEvalPreview, state.hasExtraSlot);
   renderJokers(state.jokers, document.getElementById('jokers-list'));
   renderConsumables(state.consumables, document.getElementById('consumables-list'), onUseConsumable);
   updateEvalPreview();
@@ -78,7 +110,10 @@ export function updateEvalPreview() {
     multEl.textContent = '0';
     return;
   }
-  const cards = [...state.selectedIndices].sort((a, b) => a - b).map(i => state.hand[i]);
+  let cards = [...state.selectedIndices].sort((a, b) => a - b).map(i => state.hand[i]);
+  if (state.hasExtraSlot && cards.length === 6) {
+    cards = cards.slice(0, 5);
+  }
   const result = evaluateBestHand(cards);
   nameEl.textContent = result.type.name;
   chipsEl.textContent = result.type.chips;
@@ -111,10 +146,15 @@ async function onPlayHand() {
     return;
   }
 
+  let scoringArr = selectedArr;
+  if (state.hasExtraSlot && selectedArr.length === 6) {
+    scoringArr = selectedArr.slice(0, 5);
+  }
+
   if (result.scoreDetails) {
     await runScoringSequence({
       handContainer,
-      selectedArr,
+      selectedArr: scoringArr,
       details: result.scoreDetails,
       jokersContainer: document.getElementById('jokers-list')
     });
@@ -124,9 +164,11 @@ async function onPlayHand() {
   const newCards = Math.max(0, state.hand.length - kept);
 
   renderGame({ newCards });
+  if (newCards > 0) sfxDeal();
   bumpScore();
 
   if (result.blindCleared) {
+    sfxWin();
     showMessage('Blind derrotado!');
     setTimeout(async () => {
       const advance = Game.advanceToNextBlind();
@@ -169,10 +211,12 @@ async function onDiscard() {
     busy = false;
     return;
   }
+  sfxDiscard();
 
   const kept = handBefore - selectedCount;
   const newCards = Math.max(0, state.hand.length - kept);
   renderGame({ newCards });
+  if (newCards > 0) sfxDeal();
   busy = false;
 }
 
@@ -183,30 +227,46 @@ function onSort(mode) {
 }
 
 function renderShop() {
-  document.getElementById('shop-money').textContent = `Dinheiro: $${state.money}`;
+  document.getElementById('shop-money').textContent = `$${state.money}`;
   document.getElementById('btn-reroll').textContent = `Reroll ($${state.rerollCost})`;
-  renderShopItems(state.shopItems, document.getElementById('shop-items'), onBuy);
+
+  const blind = Game.getBlind();
+  const boss = Game.getBossEffect();
+  document.getElementById('shop-blind-text').textContent =
+    blind.name + (boss ? ` (${boss.name})` : '');
+
+  renderShopItems(
+    state.shopItems,
+    document.getElementById('shop-jokers'),
+    document.getElementById('shop-consumables'),
+    onBuy
+  );
 }
 
 function onBuy(index) {
+  sfxClick();
   const result = Game.doBuyItem(index);
   if (!result.ok) {
     showMessage(result.reason);
     return;
   }
+  sfxBuy();
   renderShop();
 }
 
 function onReroll() {
+  sfxClick();
   const ok = Game.doReroll();
   if (!ok) {
     showMessage('Dinheiro insuficiente para reroll');
     return;
   }
+  sfxBuy();
   renderShop();
 }
 
 function onLeaveShop() {
+  sfxClick();
   Game.leaveShopAndContinue();
   renderGame();
   showScreen('screen-game');
@@ -223,6 +283,7 @@ function onUseConsumable(index) {
 }
 
 async function showGameOver(victory) {
+  if (victory) sfxWin(); else sfxLose();
   const title = document.getElementById('gameover-title');
   title.textContent = victory ? 'Vitória!' : 'Fim de Jogo';
   title.className = victory ? 'victory' : 'defeat';

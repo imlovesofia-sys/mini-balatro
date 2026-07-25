@@ -8,6 +8,10 @@
 </head>
 <body>
   <div id="app">
+    <div id="audio-controls">
+      <button id="btn-music" class="audio-btn" title="Música">♫</button>
+      <button id="btn-sfx" class="audio-btn" title="Efeitos">🔊</button>
+    </div>
     <section id="screen-menu" class="screen active">
       <h1 class="title">BLEFE</h1>
       <p class="subtitle">Roguelike de Pôquer</p>
@@ -21,7 +25,7 @@
     <section id="screen-howto" class="screen">
       <h2>Como Jogar</h2>
       <div class="howto-text">
-        <p><strong>Objetivo:</strong> Sobreviva 3 blinds (Pequeno, Grande, Chefe) batendo a meta de fichas de cada um. Sua pontuação total vai pro pódio!</p>
+        <p><strong>Objetivo:</strong> Sobreviva 8 rodadas (Small Blind, Big Blind e Chefe em cada uma) batendo a meta de fichas de cada um. Sua pontuação total vai pro pódio!</p>
         <p><strong>Rodada:</strong> Você tem 4 mãos e 3 descartes. Selecione de 1 a 5 cartas e clique <em>Jogar</em> para pontuar, ou <em>Descartar</em> para trocá-las.</p>
         <p><strong>Pontuação:</strong> <em>(Fichas da mão + Fichas das cartas + Efeitos) × (Mult da mão + Efeitos)</em></p>
         <p><strong>Loja:</strong> Entre blinds, compre Curingas e cartas consumíveis (Tarô/Espectral) com o dinheiro ganho.</p>
@@ -96,9 +100,34 @@
     </section>
 
     <section id="screen-shop" class="screen">
-      <h2>Loja</h2>
-      <div id="shop-money">Dinheiro: $4</div>
-      <div id="shop-items"></div>
+      <div id="shop-sign">
+        <div class="sign-wire left"></div>
+        <div class="sign-wire right"></div>
+        <div class="sign-board">
+          <span class="sign-nail left"></span>
+          <span class="sign-nail right"></span>
+          <h2 id="shop-title">LOJINHA</h2>
+        </div>
+      </div>
+
+      <div id="shop-blind-badge">
+        <span id="shop-blind-text">Blind Pequeno</span>
+      </div>
+
+      <div id="shop-money">$4</div>
+
+      <div id="shop-layout">
+        <div class="shop-section" id="shop-jokers-section">
+          <div class="shop-section-label">JOKES</div>
+          <div id="shop-jokers" class="shop-section-items"></div>
+        </div>
+
+        <div class="shop-section" id="shop-consumables-section">
+          <div class="shop-section-label">TAROT</div>
+          <div id="shop-consumables" class="shop-section-items"></div>
+        </div>
+      </div>
+
       <div class="shop-actions">
         <button id="btn-reroll">Reroll ($5)</button>
         <button id="btn-leave-shop">Sair da Loja</button>

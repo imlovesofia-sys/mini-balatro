@@ -1,6 +1,10 @@
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://slrfiqtnhfklztpjliuc.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_KEY || '';
 
+if (!SUPABASE_KEY) {
+  console.warn('⚠️  SUPABASE_KEY não configurada — placar online desativado');
+}
+
 const express = require('express');
 const path = require('path');
 
@@ -11,6 +15,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 async function supabaseQuery(endpoint, options = {}) {
+  if (!SUPABASE_KEY) return null;
   const res = await fetch(`${SUPABASE_URL}${endpoint}`, {
     ...options,
     headers: {
@@ -24,8 +29,10 @@ async function supabaseQuery(endpoint, options = {}) {
 }
 
 app.get('/api/scores', async (_req, res) => {
+  if (!SUPABASE_KEY) return res.json([]);
   try {
     const r = await supabaseQuery('/rest/v1/scores?select=*&order=score.desc&limit=10');
+    if (!r) return res.json([]);
     const scores = await r.json();
     res.json(scores);
   } catch (err) {
@@ -34,6 +41,7 @@ app.get('/api/scores', async (_req, res) => {
 });
 
 app.post('/api/scores', async (req, res) => {
+  if (!SUPABASE_KEY) return res.status(503).json({ error: 'Placar offline' });
   const { name, score } = req.body || {};
   if (typeof name !== 'string' || typeof score !== 'number' || !isFinite(score) || score < 0) {
     return res.status(400).json({ error: 'Dados inválidos' });

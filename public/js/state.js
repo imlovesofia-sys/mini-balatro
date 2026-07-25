@@ -18,7 +18,24 @@ export const state = {
   sortMode: 'rank',
   shopItems: [],
   lastPlayedHand: null,
-  lastScoreDetails: null
+  lastScoreDetails: null,
+
+  previousHand: null,
+  discardCountThisRound: 0,
+  consumableUsedThisRound: false,
+  playedCardsThisRound: [],
+  playedHandTypes: [],
+  shopPurchases: 0,
+  totalBossesDefeated: 0,
+  firstActionThisRound: null,
+  perfectDiscardTriggered: false,
+
+  suitDiscardCounts: { Hearts: 0, Diamonds: 0, Clubs: 0, Spades: 0 },
+  masteredSuit: null,
+  destroyedByBug: 0,
+  overclockMultiplier: 5,
+  hasExtraSlot: false,
+  handsPlayedWithDiamonds: 0
 };
 
 export function resetState() {
@@ -42,4 +59,21 @@ export function resetState() {
   state.shopItems = [];
   state.lastPlayedHand = null;
   state.lastScoreDetails = null;
+
+  state.previousHand = null;
+  state.discardCountThisRound = 0;
+  state.consumableUsedThisRound = false;
+  state.playedCardsThisRound = [];
+  state.playedHandTypes = [];
+  state.shopPurchases = 0;
+  state.totalBossesDefeated = 0;
+  state.firstActionThisRound = null;
+  state.perfectDiscardTriggered = false;
+
+  state.suitDiscardCounts = { Hearts: 0, Diamonds: 0, Clubs: 0, Spades: 0 };
+  state.masteredSuit = null;
+  state.destroyedByBug = 0;
+  state.overclockMultiplier = 5;
+  state.hasExtraSlot = false;
+  state.handsPlayedWithDiamonds = 0;
 }

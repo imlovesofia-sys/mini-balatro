@@ -45,6 +45,20 @@ export function rerollShop(state) {
   if (state.money < state.rerollCost) return false;
   state.money -= state.rerollCost;
   state.rerollCost += 1;
+
+  const homeBroker = state.jokers.find(j => j.effect.type === 'onReroll');
+  if (homeBroker) {
+    const hasDouble = state.jokers.some(j => j.effect.type === 'probabilityDouble');
+    const winChance = hasDouble ? 0.20 : 0.10;
+    const loseChance = hasDouble ? 0.10 : 0.05;
+    const roll = Math.random();
+    if (roll < winChance) {
+      state.money *= 2;
+    } else if (roll < winChance + loseChance) {
+      state.money = 0;
+    }
+  }
+
   state.shopItems = generateShopItems(state);
   return true;
 }
@@ -54,13 +68,21 @@ export function buyItem(state, index) {
   if (!item || item.sold) return { ok: false, reason: 'Indisponível' };
   if (state.money < item.price) return { ok: false, reason: 'Dinheiro insuficiente' };
   if (item.kind === 'joker') {
-    if (state.jokers.length >= MAX_JOKERS) return { ok: false, reason: 'Sem espaço para Curingas' };
+    const maxJ = state.bossEffect && state.bossEffect.maxJokers ? state.bossEffect.maxJokers : MAX_JOKERS;
+    if (state.jokers.length >= maxJ) return { ok: false, reason: 'Sem espaço para Curingas' };
     state.jokers.push(item.data);
+
+    const rotaJoker = state.jokers.find(j => j.effect.type === 'shopPurchaseBonus');
+    if (rotaJoker) {
+      rotaJoker.bonusMult = (rotaJoker.bonusMult || 0) + rotaJoker.effect.value;
+    }
   } else {
-    if (state.consumables.length >= MAX_CONSUMABLES) return { ok: false, reason: 'Sem espaço para consumíveis' };
+    const maxC = state.bossEffect && state.bossEffect.maxConsumables ? state.bossEffect.maxConsumables : MAX_CONSUMABLES;
+    if (state.consumables.length >= maxC) return { ok: false, reason: 'Sem espaço para consumíveis' };
     state.consumables.push(item.data);
   }
   state.money -= item.price;
+  state.shopPurchases++;
   item.sold = true;
   return { ok: true };
 }

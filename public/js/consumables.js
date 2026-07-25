@@ -9,6 +9,17 @@ export function applyConsumable(state, consumableIndex) {
   if (!c) return { ok: false, reason: 'Nada para usar' };
   const msg = performEffect(state, c);
   state.consumables.splice(consumableIndex, 1);
+  state.consumableUsedThisRound = true;
+
+  const tecelaJoker = state.jokers.find(j => j.effect.type === 'tarotHook');
+  if (tecelaJoker && (c.effect === 'money' || c.effect === 'randomMoney' || c.effect === 'extraHand' ||
+      c.effect === 'destroyAndMoney' || c.effect === 'convertSuit' || c.effect === 'duplicateCard' ||
+      c.effect === 'upgradeRank')) {
+    const suit = SUITS[Math.floor(Math.random() * SUITS.length)];
+    const rank = RANKS[Math.floor(Math.random() * RANKS.length)];
+    state.deck.push({ rank, suit, steel: true });
+  }
+
   return { ok: true, message: msg };
 }
 
@@ -54,6 +65,13 @@ function performEffect(state, c) {
       }
       return `Aprimorou ${upgraded} carta(s)`;
     }
+    case 'createStone': {
+      const count = c.count || 2;
+      for (let i = 0; i < count; i++) {
+        state.deck.push({ rank: null, suit: null, stone: true });
+      }
+      return `Criou ${count} cartas de Pedra`;
+    }
     case 'familiar': {
       destroyRandomFromDeck(state, c.destroyCount || 2);
       if (state.jokers.length < MAX_JOKERS) {
@@ -83,12 +101,14 @@ function performEffect(state, c) {
       return 'Encantamento: +3 cartas do naipe';
     }
     case 'seance': {
-      if (state.consumables.length >= MAX_CONSUMABLES) return 'Sem espaço para consumíveis';
+      const maxC = state.bossEffect && state.bossEffect.maxConsumables ? state.bossEffect.maxConsumables : MAX_CONSUMABLES;
+      if (state.consumables.length >= maxC) return 'Sem espaço para consumíveis';
       state.consumables.push({ ...pickRandom(TAROT_CARDS) });
       return 'Sessão: criou um Tarô';
     }
     case 'hex': {
-      if (state.jokers.length >= MAX_JOKERS) return 'Sem espaço para Curingas';
+      const maxJ = state.bossEffect && state.bossEffect.maxJokers ? state.bossEffect.maxJokers : MAX_JOKERS;
+      if (state.jokers.length >= maxJ) return 'Sem espaço para Curingas';
       state.jokers.push({ ...pickRandom(JOKERS) });
       return 'Hex: criou um Curinga';
     }
