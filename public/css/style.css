@@ -759,95 +759,95 @@ h1, h2 { color: #ffd700; text-align: center; }
     letter-spacing: 0.1em;
     text-shadow: 3px 3px 0 #c17f3e, 5px 5px 12px rgba(0,0,0,0.5);
   }
-  .subtitle { font-size: 0.95rem; margin-bottom: 2rem; }
-  .menu-buttons button { font-size: 16px; padding: 14px; }
+  .subtitle { font-size: 0.8rem; margin-bottom: 1.5rem; }
+  .menu-buttons button { font-size: 14px; padding: 12px; }
 
-  button { padding: 10px 20px; font-size: 15px; }
+  button { padding: 8px 14px; font-size: 13px; }
 
   #game-layout {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     min-height: auto;
   }
   #left-panel, #right-panel {
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px;
     justify-content: center;
   }
   #left-panel .panel-box, #right-panel .panel-box {
     margin-bottom: 0;
     flex: 1 1 auto;
-    min-width: 120px;
-    padding: 12px;
+    min-width: 100px;
+    padding: 8px;
   }
-  .stat { font-size: 1rem; padding: 10px; }
-  #blind-name { font-size: 1.1rem; }
-  #round-score { font-size: 1.8rem; }
-  .calc-chip { font-size: 1.3rem; padding: 6px 12px; min-width: 50px; }
-  .calc-x { font-size: 1.2rem; }
-  #eval-total { font-size: 1.2rem; }
-  #deck-pile { width: 50px; height: 70px; }
+  .stat { font-size: 0.85rem; padding: 8px; }
+  #blind-name { font-size: 0.95rem; }
+  #round-score { font-size: 1.5rem; }
+  .calc-chip { font-size: 1.1rem; padding: 5px 10px; min-width: 42px; }
+  .calc-x { font-size: 1rem; }
+  #eval-total { font-size: 1rem; }
+  #deck-pile { width: 40px; height: 56px; }
 
-  #hand-area { padding: 10px; min-height: 140px; }
-  #hand-cards { gap: 6px; flex-wrap: nowrap; }
-  .card { width: 70px; height: 100px; }
-  .card-corner .rank { font-size: 0.9rem; }
-  .card-corner .suit { font-size: 0.7rem; }
-  .card-center { font-size: 2rem; }
-  .top-left { top: 4px; left: 4px; }
-  .bottom-right { bottom: 4px; right: 4px; }
-  .card.selected { transform: translateY(-12px); }
+  #hand-area { padding: 8px; min-height: 100px; }
+  #hand-cards { gap: 4px; flex-wrap: nowrap; }
+  .card { width: 55px; height: 78px; }
+  .card-corner .rank { font-size: 0.7rem; }
+  .card-corner .suit { font-size: 0.55rem; }
+  .card-center { font-size: 1.5rem; }
+  .top-left { top: 3px; left: 3px; }
+  .bottom-right { bottom: 3px; right: 3px; }
+  .card.selected { transform: translateY(-8px); }
 
-  #action-buttons { gap: 12px; }
-  #action-buttons button { padding: 10px 18px; font-size: 14px; }
+  #action-buttons { gap: 8px; }
+  #action-buttons button { padding: 8px 14px; font-size: 13px; }
 
-  #sort-buttons { gap: 8px; margin-bottom: 8px; }
-  #sort-buttons span { font-size: 0.85rem; }
-  .sort-btn { padding: 6px 12px; font-size: 0.85rem; }
+  #sort-buttons { gap: 6px; margin-bottom: 6px; }
+  #sort-buttons span { font-size: 0.75rem; }
+  .sort-btn { padding: 5px 10px; font-size: 0.75rem; }
 
-  #jokers-area, #consumables-area { padding: 10px; gap: 8px; }
-  .section-title { font-size: 0.85rem; }
+  #jokers-area, #consumables-area { padding: 8px; gap: 6px; }
+  .section-title { font-size: 0.75rem; }
 
-  .joker { width: 100px; height: 140px; }
-  .joker-name { font-size: 0.5rem; }
+  .joker { width: 80px; height: 112px; }
+  .joker-name { font-size: 0.45rem; }
 
-  .consumable-btn { padding: 8px 12px; font-size: 0.85rem; }
+  .consumable-btn { padding: 6px 10px; font-size: 0.75rem; }
 
-  .panel-box { padding: 12px; margin-bottom: 8px; }
+  .panel-box { padding: 8px; margin-bottom: 6px; }
 
   #screen-howto { max-width: 100%; padding: 0 10px; }
-  .howto-text { padding: 16px; font-size: 0.95rem; }
+  .howto-text { padding: 12px; font-size: 0.85rem; }
 
-  #screen-shop { padding-top: 16px; }
-  #shop-sign { width: 260px; }
-  #shop-title { font-size: 1.8rem; padding: 12px 20px; }
-  #shop-blind-text { font-size: 1rem; }
-  #shop-money { font-size: 1.4rem; }
+  #screen-shop { padding-top: 12px; }
+  #shop-sign { width: 220px; }
+  #shop-title { font-size: 1.5rem; padding: 10px 16px; }
+  #shop-blind-text { font-size: 0.85rem; }
+  #shop-money { font-size: 1.2rem; }
 
-  .shop-layout { gap: 16px; }
-  .shop-section { min-width: 280px; padding: 16px; min-height: 180px; }
-  .shop-item { width: 130px; padding: 10px; }
-  .shop-item .joker { width: 100px; height: 140px; }
-  .shop-slot.empty { width: 130px; }
-  .shop-section-items { gap: 10px; }
+  .shop-layout { gap: 12px; }
+  .shop-section { min-width: 260px; padding: 12px; min-height: 160px; }
+  .shop-item { width: 110px; padding: 8px; }
+  .shop-item .joker { width: 80px; height: 112px; }
+  .shop-slot.empty { width: 110px; }
+  .shop-section-items { gap: 8px; }
 
-  .shop-actions { flex-wrap: wrap; gap: 12px; }
+  .shop-actions { flex-wrap: wrap; gap: 10px; }
 
   #screen-gameover { padding: 0 10px; }
-  #gameover-score { font-size: 1.3rem; margin: 16px 0; }
+  #gameover-score { font-size: 1.1rem; margin: 12px 0; }
   #gameover-form { max-width: 100%; }
-  #player-name { font-size: 1rem; padding: 10px; }
+  #player-name { font-size: 0.9rem; padding: 8px; }
 
   #podium-list { padding: 0 10px; }
-  #podium-list li { padding: 10px 14px; }
+  #podium-list li { padding: 8px 12px; }
 
-  #audio-controls { top: 8px; right: 8px; }
-  .audio-btn { width: 34px; height: 34px; font-size: 14px; }
+  #audio-controls { top: 6px; right: 6px; }
+  .audio-btn { width: 30px; height: 30px; font-size: 12px; }
 
-  .joker-tooltip { min-width: 180px; max-width: 240px; padding: 8px 12px; font-size: 12px; }
-  .tooltip-title { font-size: 13px; }
-  .tooltip-desc { font-size: 11px; }
+  .joker-tooltip { min-width: 160px; max-width: 220px; padding: 8px 10px; font-size: 11px; }
+  .tooltip-title { font-size: 12px; }
+  .tooltip-desc { font-size: 10px; }
 }
