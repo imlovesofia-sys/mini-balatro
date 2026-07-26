@@ -86,3 +86,12 @@ export function buyItem(state, index) {
   item.sold = true;
   return { ok: true };
 }
+
+export function sellJoker(state, jokerIndex) {
+  if (jokerIndex < 0 || jokerIndex >= state.jokers.length) return false;
+  const joker = state.jokers[jokerIndex];
+  const sellPrice = Math.max(1, joker.cost - 3);
+  state.jokers.splice(jokerIndex, 1);
+  state.money += sellPrice;
+  return sellPrice;
+}

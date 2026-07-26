@@ -3,7 +3,7 @@ import { BLINDS, STARTING_MONEY, STARTING_HANDS, STARTING_DISCARDS, HAND_SIZE, B
 import { createDeck, shuffle, drawCards, discardFromHand, recycleCards } from './deck.js';
 import { evaluateBestHand } from './poker.js';
 import { calculateScore, applyRoundEndRewards } from './scoring.js';
-import { generateShopItems, rerollShop, buyItem } from './shop.js';
+import { generateShopItems, rerollShop, buyItem, sellJoker } from './shop.js';
 import { applyConsumable, pickBossEffect } from './consumables.js';
 
 export function startRun() {
@@ -233,6 +233,10 @@ export function advanceToNextBlind() {
 
 export function doBuyItem(index) {
   return buyItem(state, index);
+}
+
+export function doSellJoker(index) {
+  return sellJoker(state, index);
 }
 
 export function doReroll() {

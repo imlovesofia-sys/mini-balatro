@@ -1,5 +1,5 @@
-import { SUIT_SYMBOL, RANK_VALUE } from './constants.js';
-import { sfxCardScore, sfxJokerProc, sfxTotalCalc } from './audio.js';
+import { SUIT_SYMBOL, POKER_HANDS, SUITS } from './constants.js';
+import { sfxCardScore, sfxJokerProc } from './audio.js';
 
 function getJokerImageStyle(joker) {
   return {
@@ -67,19 +67,34 @@ export function animateCardsOut(container, indices, type) {
   });
 }
 
-export function renderJokers(jokers, container) {
+export function renderJokers(jokers, container, onSell = null) {
   container.innerHTML = '';
-  jokers.forEach(j => {
+  jokers.forEach((j, idx) => {
     const div = document.createElement('div');
     div.className = `joker rarity-${j.rarity}`;
     Object.assign(div.style, getJokerImageStyle(j));
+    const sellPrice = Math.max(1, j.cost - 3);
     div.innerHTML = `
       <div class="joker-name">${j.name}</div>
       <div class="joker-tooltip">
         <div class="tooltip-title">${j.name}</div>
         <div class="tooltip-desc">${j.desc}</div>
       </div>
+      ${onSell ? `<button class="sell-btn" data-idx="${idx}">Vender ($${sellPrice})</button>` : ''}
     `;
+    if (onSell) {
+      div.addEventListener('click', (e) => {
+        if (e.target.classList.contains('sell-btn')) {
+          e.stopPropagation();
+          onSell(parseInt(e.target.dataset.idx));
+          return;
+        }
+        container.querySelectorAll('.joker.show-sell').forEach(j => {
+          if (j !== div) j.classList.remove('show-sell');
+        });
+        div.classList.toggle('show-sell');
+      });
+    }
     container.appendChild(div);
   });
 }
@@ -154,7 +169,7 @@ export function renderPodium(scores, container) {
   scores.forEach((s, i) => {
     const li = document.createElement('li');
     const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
-    li.innerHTML = `<span class="medal">${medal}</span> <span class="name">${s.name}</span> <span class="score">${s.score.toLocaleString('pt-BR')}</span>`;
+    li.innerHTML = `<span class="medal">${medal}</span> <span class="name">${escapeHTML(s.name)}</span> <span class="score">${s.score.toLocaleString('pt-BR')}</span>`;
     container.appendChild(li);
   });
 }
@@ -166,6 +181,8 @@ export function showScreen(id) {
 }
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+const DISPLAY_ORDER = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
 
 function floatText(parent, text, kind) {
   const span = document.createElement('span');
@@ -193,12 +210,10 @@ export async function runScoringSequence({ handContainer, selectedArr, details, 
   const nameEl = document.getElementById('eval-hand-name');
   const chipsEl = document.getElementById('eval-chips');
   const multEl = document.getElementById('eval-mult');
-  const totalEl = document.getElementById('eval-total');
 
   nameEl.textContent = details.handName;
   chipsEl.textContent = details.baseChips;
   multEl.textContent = details.baseMult;
-  totalEl.textContent = '';
   evalBox.classList.add('scoring');
 
   await sleep(350);
@@ -246,14 +261,14 @@ export async function runScoringSequence({ handContainer, selectedArr, details, 
   }
 
   await sleep(200);
-  sfxTotalCalc();
-  totalEl.textContent = `= ${details.score.toLocaleString('pt-BR')}`;
-  totalEl.classList.remove('total-pop');
-  void totalEl.offsetWidth;
-  totalEl.classList.add('total-pop');
-  await sleep(900);
 
   evalBox.classList.remove('scoring');
+}
+
+function escapeHTML(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
 }
 
 export function showMessage(msg, duration = 2000) {
@@ -266,4 +281,98 @@ export function showMessage(msg, duration = 2000) {
   box.textContent = msg;
   box.classList.add('show');
   setTimeout(() => box.classList.remove('show'), duration);
+}
+
+export function initHandsReference() {
+  const overlay = document.getElementById('hands-reference');
+  const list = document.getElementById('hands-reference-list');
+  const btnClose = document.getElementById('btn-close-hands');
+  const evalBox = document.getElementById('eval-box');
+
+  list.innerHTML = '';
+  POKER_HANDS.forEach(h => {
+    const item = document.createElement('div');
+    item.className = 'hand-ref-item';
+    item.innerHTML = `
+      <span class="hand-ref-name">${h.name}</span>
+      <span class="hand-ref-stats">
+        <span class="hand-ref-chips">${h.chips}</span> fichas
+        &nbsp;×&nbsp;
+        <span class="hand-ref-mult">${h.mult}</span> mult
+      </span>
+    `;
+    list.appendChild(item);
+  });
+
+  evalBox.addEventListener('click', () => {
+    overlay.classList.add('active');
+  });
+
+  btnClose.addEventListener('click', () => {
+    overlay.classList.remove('active');
+  });
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.classList.remove('active');
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') overlay.classList.remove('active');
+  });
+}
+
+export function initDeckReference(getState) {
+  const overlay = document.getElementById('deck-reference');
+  const grid = document.getElementById('deck-reference-grid');
+  const btnClose = document.getElementById('btn-close-deck');
+  const deckPile = document.getElementById('deck-pile');
+
+  function render() {
+    const state = getState();
+    grid.innerHTML = '';
+    SUITS.forEach(suit => {
+      const isRed = suit === 'Hearts' || suit === 'Diamonds';
+      const suitLabel = document.createElement('div');
+      suitLabel.className = 'deck-suit-label ' + (isRed ? 'red' : 'black');
+      suitLabel.textContent = SUIT_SYMBOL[suit];
+      grid.appendChild(suitLabel);
+
+      DISPLAY_ORDER.forEach(rank => {
+        const card = state.deck.find(c => c.suit === suit && c.rank === rank);
+        const inHand = state.hand.some(c => c.suit === suit && c.rank === rank);
+        const inUsed = state.usedPile.some(c => c.suit === suit && c.rank === rank);
+        const colorClass = isRed ? 'red' : 'black';
+        let statusClass = '';
+        if (inHand) statusClass = 'in-hand';
+        else if (inUsed) statusClass = 'played';
+        else if (card) statusClass = 'in-deck';
+        else return;
+
+        const el = document.createElement('div');
+        el.className = `deck-card ${colorClass} ${statusClass}`;
+        el.innerHTML = `
+          <span class="dc-rank">${rank}</span>
+          <span class="dc-center">${SUIT_SYMBOL[suit]}</span>
+        `;
+        grid.appendChild(el);
+      });
+    });
+  }
+
+  deckPile.addEventListener('click', () => {
+    render();
+    overlay.classList.add('active');
+  });
+
+  btnClose.addEventListener('click', () => {
+    overlay.classList.remove('active');
+  });
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.classList.remove('active');
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') overlay.classList.remove('active');
+  });
 }

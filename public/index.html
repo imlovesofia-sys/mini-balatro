@@ -9,8 +9,8 @@
 <body>
   <div id="app">
     <div id="audio-controls">
-      <button id="btn-music" class="audio-btn" title="Música">♫</button>
-      <button id="btn-sfx" class="audio-btn" title="Efeitos">🔊</button>
+      <button id="btn-music" class="audio-btn" title="Música" aria-label="Alternar música">♫</button>
+      <button id="btn-sfx" class="audio-btn" title="Efeitos" aria-label="Alternar efeitos sonoros">🔊</button>
     </div>
     <section id="screen-menu" class="screen active">
       <h1 class="title">BLEFE</h1>
@@ -56,7 +56,6 @@
               <div class="calc-x">×</div>
               <div id="eval-mult" class="calc-chip mult">0</div>
             </div>
-            <div id="eval-total"></div>
           </div>
         </aside>
 
@@ -116,6 +115,11 @@
 
       <div id="shop-money">$4</div>
 
+      <div id="shop-owned-area">
+        <span class="section-title">Curingas:</span>
+        <div id="shop-owned-list"></div>
+      </div>
+
       <div id="shop-layout">
         <div class="shop-section" id="shop-jokers-section">
           <div class="shop-section-label">JOKES</div>
@@ -154,6 +158,32 @@
       <button id="btn-back-podium">Voltar</button>
     </section>
   </div>
+
+  <div id="hands-reference" class="modal-overlay">
+    <div id="hands-reference-content" class="modal-content">
+      <div class="modal-header">
+        <h3>Mãos de Pôquer</h3>
+        <button class="modal-close" id="btn-close-hands" aria-label="Fechar">&times;</button>
+      </div>
+      <div id="hands-reference-list"></div>
+    </div>
+  </div>
+
+  <div id="deck-reference" class="modal-overlay">
+    <div id="deck-reference-content" class="modal-content">
+      <div class="modal-header">
+        <h3>Baralho</h3>
+        <div id="deck-legend">
+          <span class="legend-item"><span class="legend-dot in-deck"></span>No baralho</span>
+          <span class="legend-item"><span class="legend-dot in-hand"></span>Na mão</span>
+          <span class="legend-item"><span class="legend-dot played"></span>Jogada</span>
+        </div>
+        <button class="modal-close" id="btn-close-deck" aria-label="Fechar">&times;</button>
+      </div>
+      <div id="deck-reference-grid"></div>
+    </div>
+  </div>
+
   <script type="module" src="/js/main.js"></script>
 </body>
 </html>

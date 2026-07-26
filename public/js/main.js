@@ -2,7 +2,8 @@ import { state } from './state.js';
 import {
   showScreen, renderHand, renderJokers, renderConsumables,
   renderShopItems, renderPodium, showMessage,
-  animateCardsOut, runScoringSequence
+  animateCardsOut, runScoringSequence,
+  initHandsReference, initDeckReference
 } from './ui.js';
 import { evaluateBestHand } from './poker.js';
 import { fetchScores, submitScore } from './api.js';
@@ -75,6 +76,9 @@ export function setupApp() {
     sfxClick();
     showScreen('screen-menu');
   });
+
+  initHandsReference();
+  initDeckReference(() => state);
 }
 
 let busy = false;
@@ -94,7 +98,7 @@ export function renderGame(opts = {}) {
   document.getElementById('deck-count').textContent = `${state.deck.length} cartas`;
 
   renderHand(state.hand, state.selectedIndices, document.getElementById('hand-cards'), opts.newCards || 0, updateEvalPreview, state.hasExtraSlot);
-  renderJokers(state.jokers, document.getElementById('jokers-list'));
+  renderJokers(state.jokers, document.getElementById('jokers-list'), onSell);
   renderConsumables(state.consumables, document.getElementById('consumables-list'), onUseConsumable);
   updateEvalPreview();
 }
@@ -241,6 +245,8 @@ function renderShop() {
     document.getElementById('shop-consumables'),
     onBuy
   );
+
+  renderJokers(state.jokers, document.getElementById('shop-owned-list'), onSell);
 }
 
 function onBuy(index) {
@@ -252,6 +258,14 @@ function onBuy(index) {
   }
   sfxBuy();
   renderShop();
+}
+
+function onSell(index) {
+  sfxClick();
+  const price = Game.doSellJoker(index);
+  if (price === false) return;
+  showMessage(`Vendido por $${price}`);
+  renderGame();
 }
 
 function onReroll() {
