@@ -2,7 +2,7 @@ import { state, resetState } from './state.js';
 import { BLINDS, STARTING_MONEY, STARTING_HANDS, STARTING_DISCARDS, HAND_SIZE, BASE_REROLL_COST, BLIND_REWARD, RANK_INDEX, SUITS } from './constants.js';
 import { createDeck, shuffle, drawCards, discardFromHand, recycleCards } from './deck.js';
 import { evaluateBestHand } from './poker.js';
-import { calculateScore, applyRoundEndRewards } from './scoring.js';
+import { calculateScore, applyRoundEndRewards, calculateSintonia } from './scoring.js';
 import { generateShopItems, rerollShop, buyItem, sellJoker } from './shop.js';
 import { applyConsumable, pickBossEffect } from './consumables.js';
 
@@ -107,6 +107,27 @@ export function playHand() {
   state.hands -= 1;
   state.handsPlayedThisRound++;
 
+  const sintoniaResults = calculateSintonia(handCards, state.jokers, {
+    money: state.money,
+    cardAllowed,
+    previousHand: state.previousHand,
+    perfectDiscardTriggered: state.perfectDiscardTriggered,
+    handsPlayedThisRound: state.handsPlayedThisRound,
+    overclockMultiplier: state.overclockMultiplier
+  }, result.type.chips, result.type.mult);
+
+  let totalSintoniaScore = 0;
+  const allSintoniaEvents = [];
+  for (const s of sintoniaResults) {
+    totalSintoniaScore += s.score;
+    if (s.grayIndices && s.grayIndices.length > 0) {
+      allSintoniaEvents.push({ type: 'sintoniaGray', grayIndices: s.grayIndices, repIndex: s.repIndex });
+    }
+    allSintoniaEvents.push(...s.events);
+  }
+  state.roundScore += totalSintoniaScore;
+  state.totalScore += totalSintoniaScore;
+
   const hasDiamonds = played.some(c => c.suit === 'Diamonds');
   if (hasDiamonds) {
     state.handsPlayedWithDiamonds = (state.handsPlayedWithDiamonds || 0) + 1;
@@ -137,10 +158,10 @@ export function playHand() {
     blocked: played.map(c => (cardAllowed ? !cardAllowed(c) : false)),
     baseChips: result.type.chips,
     baseMult: result.type.mult,
-    score: scoreResult.score,
+    score: scoreResult.score + totalSintoniaScore,
     chips: scoreResult.chips,
     mult: scoreResult.mult,
-    events: scoreResult.events
+    events: [...scoreResult.events, ...allSintoniaEvents]
   };
 
   drawCards(state, HAND_SIZE - state.hand.length);
@@ -243,8 +264,8 @@ export function doReroll() {
   return rerollShop(state);
 }
 
-export function doUseConsumable(index) {
-  return applyConsumable(state, index);
+export function doUseConsumable(index, selectedCards) {
+  return applyConsumable(state, index, selectedCards);
 }
 
 export function leaveShopAndContinue() {

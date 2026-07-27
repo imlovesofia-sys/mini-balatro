@@ -1,7 +1,7 @@
 import { SUIT_SYMBOL, POKER_HANDS, SUITS } from './constants.js';
-import { sfxCardScore, sfxJokerProc } from './audio.js';
+import { sfxCardScore, sfxJokerProc, sfxSintonia } from './audio.js';
 
-function getJokerImageStyle(joker) {
+export function getJokerImageStyle(joker) {
   return {
     backgroundImage: `url('/img/jokers/${joker.id}.png')`,
     backgroundSize: 'contain',
@@ -11,12 +11,24 @@ function getJokerImageStyle(joker) {
 }
 
 export function cardToHTML(card, selected = false) {
+  if (card.stone) {
+    return `<div class="card stone ${selected ? 'selected' : ''}" style="background:linear-gradient(135deg,#78716c,#57534e);border-color:#44403c;">
+      <div class="card-corner top-left"><span class="rank" style="color:#d6d3d1;">🪨</span></div>
+      <div class="card-center" style="color:#d6d3d1;font-size:1.5rem;">🪨</div>
+      <div class="card-corner bottom-right"><span class="rank" style="color:#d6d3d1;">🪨</span></div>
+    </div>`;
+  }
   const symbol = SUIT_SYMBOL[card.suit];
   const isRed = card.suit === 'Hearts' || card.suit === 'Diamonds';
   const colorClass = isRed ? 'red' : 'black';
-  return `<div class="card ${colorClass} ${selected ? 'selected' : ''}">
+  const goldClass = card.gold ? 'gold' : '';
+  const musicalClass = card.musical ? 'musical' : '';
+  const propertyIcon = card.gold ? '<span class="card-property-icon gold-icon">💰</span>' : '';
+  const musicalIcon = card.musical ? '<span class="card-property-icon musical-icon">🎵</span>' : '';
+  return `<div class="card ${colorClass} ${goldClass} ${musicalClass} ${selected ? 'selected' : ''}">
     <div class="card-corner top-left"><span class="rank">${card.rank}</span><span class="suit">${symbol}</span></div>
     <div class="card-center">${symbol}</div>
+    <div class="card-property-icons">${propertyIcon}${musicalIcon}</div>
     <div class="card-corner bottom-right"><span class="rank">${card.rank}</span><span class="suit">${symbol}</span></div>
   </div>`;
 }
@@ -104,7 +116,12 @@ export function renderConsumables(consumables, container, onUse) {
   consumables.forEach((c, i) => {
     const btn = document.createElement('button');
     btn.className = 'consumable-btn';
-    btn.innerHTML = `<strong>${c.name}</strong><br><span class="small">${c.desc}</span>`;
+    const hasImage = c.id && c.id.match(/^t\d+$/);
+    if (hasImage) {
+      btn.innerHTML = `<img src="/img/fortuna/${c.id}.png" alt="${c.name}" class="consumable-img"><br><strong>${c.name}</strong><br><span class="small">${c.desc}</span>`;
+    } else {
+      btn.innerHTML = `<strong>${c.name}</strong><br><span class="small">${c.desc}</span>`;
+    }
     btn.addEventListener('click', () => onUse(i));
     container.appendChild(btn);
   });
@@ -148,16 +165,215 @@ export function renderShopItems(items, jokersContainer, consumablesContainer, on
       jokersContainer.appendChild(div);
 
     } else {
-      inner = `<div class="consumable-shop">
-        <div class="consumable-name">${item.data.name}</div>
-        <div class="consumable-desc">${item.data.desc}</div>
-      </div>`;
+      const hasImage = item.data.id && item.data.id.match(/^t\d+$/);
+      if (hasImage) {
+        inner = `<div class="consumable-shop">
+          <img src="/img/fortuna/${item.data.id}.png" alt="${item.data.name}" class="consumable-shop-img">
+          <div class="consumable-name">${item.data.name}</div>
+          <div class="consumable-desc">${item.data.desc}</div>
+        </div>`;
+      } else {
+        inner = `<div class="consumable-shop">
+          <div class="consumable-name">${item.data.name}</div>
+          <div class="consumable-desc">${item.data.desc}</div>
+        </div>`;
+      }
       inner += `<div class="price">$${item.price}</div>`;
       div.innerHTML = inner;
       div.addEventListener('click', () => onBuy(i));
       consumablesContainer.appendChild(div);
     }
   });
+}
+
+export function renderPackShopItem(item, index, container, onBuy) {
+  const div = document.createElement('div');
+  div.className = `pack-shop-card pack-tier-${item.tier.id}`;
+  div.innerHTML = `
+    <div class="pack-shop-name">${item.tier.name}</div>
+    <div class="pack-shop-price">$${item.price}</div>
+  `;
+  div.addEventListener('click', () => onBuy(index));
+  container.appendChild(div);
+}
+
+export async function openPackAnimation(tier, tarotCards, deckCards) {
+  const modal = document.getElementById('pack-modal');
+  const title = document.getElementById('pack-title');
+  const subtitle = document.getElementById('pack-subtitle');
+  const deckRow = document.getElementById('pack-deck-cards');
+  const tarotRow = document.getElementById('pack-tarot-cards');
+  const explosion = document.getElementById('pack-explosion');
+
+  modal.className = 'modal-overlay active';
+  modal.classList.add(`pack-tier-${tier.id}`);
+  title.textContent = tier.name;
+  subtitle.textContent = `Escolha ${tier.picks} tarô${tier.picks > 1 ? 's' : ''}`;
+
+  deckRow.innerHTML = '';
+  tarotRow.innerHTML = '';
+  explosion.innerHTML = '';
+
+  explosion.classList.remove('pack-active');
+  void explosion.offsetWidth;
+  explosion.classList.add('pack-active');
+
+  const app = document.getElementById('app');
+  app.classList.add('screen-shake');
+  setTimeout(() => app.classList.remove('screen-shake'), 350);
+
+  const flash = document.createElement('div');
+  flash.className = 'pack-flash-overlay';
+  document.body.appendChild(flash);
+  setTimeout(() => flash.remove(), 500);
+
+  for (let i = 0; i < 20; i++) {
+    const p = document.createElement('div');
+    p.className = 'pack-particle';
+    const size = Math.random() * 8 + 4;
+    const tx = (Math.random() - 0.5) * 400;
+    const ty = (Math.random() - 0.5) * 400;
+    p.style.cssText = `
+      width:${size}px;height:${size}px;
+      left:50%;top:50%;
+      background:${Math.random() > 0.5 ? '#f59e0b' : '#fbbf24'};
+      --tx:${tx}px;--ty:${ty}px;
+      animation-delay:${Math.random() * 0.15}s;
+    `;
+    explosion.appendChild(p);
+  }
+
+  await sleep(400);
+
+  for (let i = 0; i < deckCards.length; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'pack-card-slot deck-card';
+    slot.dataset.index = i;
+    const c = deckCards[i];
+    const isRed = c.suit === 'Hearts' || c.suit === 'Diamonds';
+    const suitSymbol = SUIT_SYMBOL[c.suit] || '♠';
+    slot.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;color:${isRed ? '#ef4444' : '#1e293b'};font-weight:bold;">
+      <span style="font-size:1rem;">${c.rank}</span>
+      <span style="font-size:0.9rem;">${suitSymbol}</span>
+    </div>`;
+    slot.style.background = '#fefce8';
+    slot.style.border = '2px solid #1e293b';
+    deckRow.appendChild(slot);
+    await sleep(80);
+  }
+
+  for (let i = 0; i < tarotCards.length; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'pack-card-slot pack-card-tooltip';
+    slot.dataset.index = i;
+    const t = tarotCards[i];
+    const hasImage = t.id && t.id.match(/^t\d+$/) || t.id && t.id.match(/^s\d+$/);
+    if (hasImage) {
+      const imgPath = t.id.match(/^t\d+$/) ? `/img/fortuna/${t.id}.png` : `/img/fortuna/${t.id}.png`;
+      slot.innerHTML = `<img src="${imgPath}" alt="${t.name}">
+        <div class="joker-tooltip">
+          <div class="tooltip-title">${t.name}</div>
+          <div class="tooltip-desc">${t.desc}</div>
+        </div>`;
+    } else {
+      slot.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:0.5rem;color:#e2e8f0;">${t.name}</div>
+        <div class="joker-tooltip">
+          <div class="tooltip-title">${t.name}</div>
+          <div class="tooltip-desc">${t.desc}</div>
+        </div>`;
+      slot.style.background = '#1e1b4b';
+    }
+    tarotRow.appendChild(slot);
+    await sleep(80);
+  }
+
+  return { modal, deckRow, tarotRow, title, subtitle };
+}
+
+export function selectTarotPack(slot) {
+  document.querySelectorAll('#pack-tarot-cards .pack-card-slot').forEach(s => {
+    s.classList.remove('selected', 'tarot-glow');
+  });
+  slot.classList.add('selected', 'tarot-glow');
+}
+
+export function selectDeckCardPack(slot) {
+  document.querySelectorAll('#pack-deck-cards .pack-card-slot').forEach(s => {
+    s.classList.remove('selected');
+  });
+  slot.classList.add('selected');
+}
+
+export async function flashDeckCard(slot) {
+  const app = document.getElementById('app');
+  app.classList.add('screen-shake');
+  slot.classList.add('card-apply-flash');
+  await sleep(600);
+  slot.classList.remove('card-apply-flash');
+  app.classList.remove('screen-shake');
+}
+
+export async function animateDestroy(slot) {
+  slot.classList.add('card-destroy');
+  await sleep(800);
+  slot.classList.add('pack-card-removed');
+  await sleep(500);
+}
+
+export async function animateConvert(slot) {
+  slot.classList.add('card-convert');
+  const app = document.getElementById('app');
+  app.classList.add('screen-shake');
+  await sleep(600);
+  slot.classList.remove('card-convert');
+  app.classList.remove('screen-shake');
+}
+
+export async function animateUpgrade(slot) {
+  slot.classList.add('card-upgrade');
+  await sleep(500);
+  slot.classList.remove('card-upgrade');
+}
+
+export async function animateDuplicate(slot) {
+  slot.classList.add('card-duplicate');
+  await sleep(600);
+  slot.classList.remove('card-duplicate');
+}
+
+export function flashNoSelect(slot) {
+  slot.classList.add('pack-no-select');
+  setTimeout(() => slot.classList.remove('pack-no-select'), 400);
+}
+
+export async function closePackAnimation() {
+  const modal = document.getElementById('pack-modal');
+  const deckRow = document.getElementById('pack-deck-cards');
+  const tarotRow = document.getElementById('pack-tarot-cards');
+  const deckSlots = deckRow.querySelectorAll('.pack-card-slot');
+  const tarotSlots = tarotRow.querySelectorAll('.pack-card-slot');
+
+  for (const slot of deckSlots) {
+    const outX = (Math.random() - 0.5) * 600;
+    const outY = -Math.random() * 400 - 100;
+    const outR = (Math.random() - 0.5) * 360;
+    slot.style.setProperty('--outX', `${outX}px`);
+    slot.style.setProperty('--outY', `${outY}px`);
+    slot.style.setProperty('--outR', `${outR}deg`);
+    slot.classList.add('pack-card-flyout');
+  }
+  for (const slot of tarotSlots) {
+    const outX = (Math.random() - 0.5) * 600;
+    const outY = Math.random() * 400 + 100;
+    const outR = (Math.random() - 0.5) * 360;
+    slot.style.setProperty('--outX', `${outX}px`);
+    slot.style.setProperty('--outY', `${outY}px`);
+    slot.style.setProperty('--outR', `${outR}deg`);
+    slot.classList.add('pack-card-flyout');
+  }
+
+  await sleep(500);
+  modal.className = 'modal-overlay';
 }
 
 export function renderPodium(scores, container) {
@@ -257,6 +473,40 @@ export async function runScoringSequence({ handContainer, selectedArr, details, 
       if (ev.kind === 'chips' || ev.kind === 'money') bumpNum(chipsEl);
       else bumpNum(multEl);
       await sleep(380);
+    } else if (ev.type === 'sintoniaGray') {
+      for (const idx of ev.grayIndices) {
+        const w = wrappers[selectedArr[idx]];
+        if (w) w.classList.add('sintonia-done');
+      }
+      await sleep(200);
+    } else if (ev.type === 'sintoniaCard') {
+      sfxSintonia(ev.repIndex);
+      const w = wrappers[selectedArr[ev.cardIndex]];
+      if (w) {
+        w.classList.remove('sintonia-proc');
+        void w.offsetWidth;
+        w.classList.add('sintonia-proc');
+        floatText(w, `🎵 +${ev.value}`, 'sintonia');
+      }
+      chipsEl.textContent = ev.chips;
+      multEl.textContent = round2(ev.mult);
+      bumpNum(chipsEl);
+      await sleep(400);
+    } else if (ev.type === 'sintoniaJoker') {
+      sfxSintonia(ev.repIndex);
+      const jEl = jokersContainer.children[ev.jokerIndex];
+      if (jEl) {
+        jEl.classList.remove('joker-proc');
+        void jEl.offsetWidth;
+        jEl.classList.add('joker-proc');
+        const label = ev.kind === 'xmult' ? `×${ev.value}` : ev.kind === 'money' ? `$${ev.value}` : `+${ev.value}`;
+        floatText(jEl, `🎵 ${label}`, ev.kind);
+      }
+      chipsEl.textContent = ev.chips;
+      multEl.textContent = round2(ev.mult);
+      if (ev.kind === 'chips' || ev.kind === 'money') bumpNum(chipsEl);
+      else bumpNum(multEl);
+      await sleep(400);
     }
   }
 

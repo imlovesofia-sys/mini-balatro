@@ -20,6 +20,65 @@ export function calculateScore(playedCards, scoringIdx, handType, jokers, stateC
     const v = card.stone ? 50 : (RANK_VALUE[card.rank] || 0);
     chips += v;
     events.push({ type: 'card', cardIndex: i, kind: 'chips', value: v, chips, mult });
+
+    jokers.forEach((joker, j) => {
+      const e = joker.effect;
+      const emit = (kind, value) =>
+        events.push({ type: 'joker', jokerIndex: j, name: joker.name, kind, value, chips, mult });
+
+      switch (e.type) {
+        case 'perSuit': {
+          if (card.suit === e.suit) {
+            if (e.target === 'mult') { mult += e.value; emit('mult', e.value); }
+            else { chips += e.value; emit('chips', e.value); }
+          }
+          break;
+        }
+        case 'lowRankBonus': {
+          if (RANK_VALUE[card.rank] <= 4) {
+            chips += 25; mult += 5;
+            emit('chips', 25);
+            emit('mult', 5);
+          }
+          break;
+        }
+        case 'stoneBonus': {
+          if (card.stone) {
+            chips += 30; mult += 10;
+            emit('chips', 30);
+            emit('mult', 10);
+          }
+          break;
+        }
+        case 'spadeDoubleScore': {
+          if (card.suit === 'Spades') {
+            const sv = card.stone ? 50 : (RANK_VALUE[card.rank] || 0);
+            chips += sv;
+            emit('chips', sv);
+          }
+          break;
+        }
+        case 'parityBonus': {
+          const val = card.stone ? 50 : (RANK_VALUE[card.rank] || 0);
+          if (val % 2 === 0) {
+            chips += 10;
+            emit('chips', 10);
+          } else {
+            mult += 4;
+            emit('mult', 4);
+          }
+          break;
+        }
+        case 'rankSequenceBonus': {
+          const prev = stateContext.previousHand;
+          if (prev && prev.cards.some(c => c.rank === 'K') && card.rank === 'Q') {
+            mult *= 2;
+            emit('xmult', 2);
+          }
+          break;
+        }
+      }
+    });
   });
 
   jokers.forEach((joker, j) => {
@@ -34,15 +93,6 @@ export function calculateScore(playedCards, scoringIdx, handType, jokers, stateC
         chips += e.value; emit('chips', e.value); break;
       case 'xMult':
         mult *= e.value; emit('xmult', e.value); break;
-      case 'perSuit': {
-        const count = playedCards.filter(c => c.suit === e.suit).length;
-        if (count > 0) {
-          const total = count * e.value;
-          if (e.target === 'mult') { mult += total; emit('mult', total); }
-          else { chips += total; emit('chips', total); }
-        }
-        break;
-      }
       case 'perJoker': {
         const bonus = jokers.length * e.value;
         mult += bonus; emit('mult', bonus);
@@ -77,59 +127,12 @@ export function calculateScore(playedCards, scoringIdx, handType, jokers, stateC
         }
         break;
       }
-      case 'lowRankBonus': {
-        const lowCards = playedCards.filter((c, i) => scoringIdx.has(i) && RANK_VALUE[c.rank] <= 4);
-        if (lowCards.length > 0) {
-          const chipsBonus = lowCards.length * 25;
-          const multBonus = lowCards.length * 5;
-          chips += chipsBonus;
-          mult += multBonus;
-          emit('chips', chipsBonus);
-          emit('mult', multBonus);
-        }
-        break;
-      }
-      case 'parityBonus': {
-        playedCards.forEach((card, i) => {
-          if (!scoringIdx.has(i)) return;
-          const val = card.stone ? 50 : (RANK_VALUE[card.rank] || 0);
-          if (val % 2 === 0) {
-            chips += 10;
-            events.push({ type: 'joker', jokerIndex: j, name: joker.name, kind: 'chips', value: 10, chips, mult });
-          } else {
-            mult += 4;
-            events.push({ type: 'joker', jokerIndex: j, name: joker.name, kind: 'mult', value: 4, chips, mult });
-          }
-        });
-        break;
-      }
       case 'allBlackHand': {
         const allBlack = playedCards.length > 0 && playedCards.every(c => c.suit === 'Clubs' || c.suit === 'Spades');
         if (allBlack) {
           mult *= 1.5;
           emit('xmult', 1.5);
         }
-        break;
-      }
-      case 'stoneBonus': {
-        const stoneCards = playedCards.filter((c, i) => scoringIdx.has(i) && c.stone);
-        if (stoneCards.length > 0) {
-          const cBonus = stoneCards.length * 30;
-          const mBonus = stoneCards.length * 10;
-          chips += cBonus;
-          mult += mBonus;
-          emit('chips', cBonus);
-          emit('mult', mBonus);
-        }
-        break;
-      }
-      case 'spadeDoubleScore': {
-        const spades = playedCards.filter((c, i) => scoringIdx.has(i) && c.suit === 'Spades');
-        spades.forEach(card => {
-          const v = card.stone ? 50 : (RANK_VALUE[card.rank] || 0);
-          chips += v;
-          events.push({ type: 'joker', jokerIndex: j, name: joker.name, kind: 'chips', value: v, chips, mult });
-        });
         break;
       }
       case 'suitCombo': {
@@ -141,21 +144,9 @@ export function calculateScore(playedCards, scoringIdx, handType, jokers, stateC
         }
         break;
       }
-      case 'rankSequenceBonus': {
-        const prev = stateContext.previousHand;
-        if (prev && prev.cards.some(c => c.rank === 'K')) {
-          const queens = playedCards.filter((c, i) => scoringIdx.has(i) && c.rank === 'Q');
-          if (queens.length > 0) {
-            const bonus = Math.pow(2, queens.length);
-            mult *= bonus;
-            emit('xmult', bonus);
-          }
-        }
-        break;
-      }
       case 'sequentialHandBonus': {
         const prev = stateContext.previousHand;
-        if (prev && prev.handType && prev.handType.id === handType.id) {
+        if (prev && prev.handType && prev.handType.id === handType.id && stateContext.handsPlayedThisRound === 1) {
           const prevMult = prev.finalMult || 1;
           if (prevMult > 1) {
             mult *= prevMult;
@@ -212,6 +203,13 @@ export function calculateScore(playedCards, scoringIdx, handType, jokers, stateC
         }
         break;
       }
+      case 'perSuit':
+      case 'lowRankBonus':
+      case 'stoneBonus':
+      case 'spadeDoubleScore':
+      case 'parityBonus':
+      case 'rankSequenceBonus':
+        break;
       case 'roundEnd':
       case 'dividends':
       case 'realEstate':
@@ -224,6 +222,160 @@ export function calculateScore(playedCards, scoringIdx, handType, jokers, stateC
 
   const finalScore = Math.floor(chips * mult);
   return { score: finalScore, chips, mult, events, moneyBonus };
+}
+
+export function calculateSintonia(playedCards, jokers, stateContext, baseChips, baseMult) {
+  const ROYALTY = new Set(['J', 'Q', 'K']);
+  const musicalGroups = new Map();
+
+  playedCards.forEach((card, i) => {
+    if (!card.musical) return;
+    if (stateContext.cardAllowed && !stateContext.cardAllowed(card)) return;
+
+    let key;
+    if (ROYALTY.has(card.rank)) {
+      key = `${card.suit}-royal`;
+    } else {
+      key = `${card.suit}-${card.rank}`;
+    }
+
+    if (!musicalGroups.has(key)) musicalGroups.set(key, []);
+    musicalGroups.get(key).push({ card, index: i });
+  });
+
+  const sintoniaResults = [];
+
+  for (const [key, group] of musicalGroups) {
+    if (group.length < 2) continue;
+
+    for (let rep = 1; rep < group.length - 1; rep++) {
+      let chips = baseChips;
+      let mult = baseMult;
+      const repEvents = [];
+      const grayIndices = [];
+
+      for (let g = 0; g < rep; g++) {
+        grayIndices.push(group[g].index);
+      }
+
+      for (let c = rep; c < group.length; c++) {
+        const target = group[c];
+        const v = target.card.stone ? 50 : (RANK_VALUE[target.card.rank] || 0);
+        chips += v;
+        repEvents.push({ type: 'sintoniaCard', cardIndex: target.index, kind: 'chips', value: v, chips, mult, repIndex: rep });
+
+        jokers.forEach((joker, j) => {
+          const e = joker.effect;
+          const emit = (kind, value) =>
+            repEvents.push({ type: 'sintoniaJoker', jokerIndex: j, name: joker.name, kind, value, chips, mult, repIndex: rep });
+
+          switch (e.type) {
+            case 'perSuit': {
+              if (target.card.suit === e.suit) {
+                if (e.target === 'mult') { mult += e.value; emit('mult', e.value); }
+                else { chips += e.value; emit('chips', e.value); }
+              }
+              break;
+            }
+            case 'lowRankBonus': {
+              if (RANK_VALUE[target.card.rank] <= 4) {
+                chips += 25; mult += 5;
+                emit('chips', 25);
+                emit('mult', 5);
+              }
+              break;
+            }
+            case 'stoneBonus': {
+              if (target.card.stone) {
+                chips += 30; mult += 10;
+                emit('chips', 30);
+                emit('mult', 10);
+              }
+              break;
+            }
+            case 'spadeDoubleScore': {
+              if (target.card.suit === 'Spades') {
+                const sv = target.card.stone ? 50 : (RANK_VALUE[target.card.rank] || 0);
+                chips += sv;
+                emit('chips', sv);
+              }
+              break;
+            }
+            case 'parityBonus': {
+              const val = target.card.stone ? 50 : (RANK_VALUE[target.card.rank] || 0);
+              if (val % 2 === 0) {
+                chips += 10;
+                emit('chips', 10);
+              } else {
+                mult += 4;
+                emit('mult', 4);
+              }
+              break;
+            }
+          }
+        });
+      }
+
+      jokers.forEach((joker, j) => {
+        const e = joker.effect;
+        const emit = (kind, value) =>
+          repEvents.push({ type: 'sintoniaJoker', jokerIndex: j, name: joker.name, kind, value, chips, mult, repIndex: rep });
+
+        switch (e.type) {
+          case 'flatMult': mult += e.value; emit('mult', e.value); break;
+          case 'flatChips': chips += e.value; emit('chips', e.value); break;
+          case 'xMult': mult *= e.value; emit('xmult', e.value); break;
+          case 'perJoker': {
+            const bonus = jokers.length * e.value;
+            mult += bonus; emit('mult', bonus);
+            break;
+          }
+          case 'overclock': {
+            const ocMult = stateContext.overclockMultiplier || 5;
+            if (ocMult > 0) {
+              mult *= ocMult;
+              emit('xmult', ocMult);
+            }
+            break;
+          }
+          case 'perSuit':
+          case 'lowRankBonus':
+          case 'stoneBonus':
+          case 'spadeDoubleScore':
+          case 'parityBonus':
+          case 'roundEnd':
+          case 'dividends':
+          case 'realEstate':
+          case 'onReroll':
+          case 'tarotHook':
+          case 'extraSlot':
+          case 'destroyOnDiscard':
+          case 'suitMastery':
+          case 'matchBaseChips':
+          case 'sequentialHandBonus':
+          case 'rankSequenceBonus':
+          case 'perfectDiscard':
+          case 'shopPurchaseBonus':
+          case 'allBlackHand':
+          case 'suitCombo':
+          case 'probabilityDouble':
+            break;
+        }
+      });
+
+      const finalScore = Math.floor(chips * mult);
+      sintoniaResults.push({
+        repIndex: rep,
+        grayIndices,
+        score: finalScore,
+        chips,
+        mult,
+        events: repEvents
+      });
+    }
+  }
+
+  return sintoniaResults;
 }
 
 export function applyRoundEndRewards(jokers, stateContext) {
@@ -263,6 +415,11 @@ export function applyRoundEndRewards(jokers, stateContext) {
         }
       });
     }
+  }
+
+  const goldCards = stateContext.hand.filter(c => c.gold).length;
+  if (goldCards > 0) {
+    money += goldCards * 3;
   }
 
   stateContext.money += money;

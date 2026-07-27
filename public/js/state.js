@@ -18,9 +18,9 @@ export const state = {
   sortMode: 'rank',
   shopItems: [],
   lastPlayedHand: null,
-  lastScoreDetails: null,
 
   previousHand: null,
+  handsPlayedThisRound: 0,
   discardCountThisRound: 0,
   consumableUsedThisRound: false,
   playedCardsThisRound: [],
@@ -58,9 +58,9 @@ export function resetState() {
   state.sortMode = 'rank';
   state.shopItems = [];
   state.lastPlayedHand = null;
-  state.lastScoreDetails = null;
 
   state.previousHand = null;
+  state.handsPlayedThisRound = 0;
   state.discardCountThisRound = 0;
   state.consumableUsedThisRound = false;
   state.playedCardsThisRound = [];

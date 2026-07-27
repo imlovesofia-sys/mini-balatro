@@ -80,6 +80,11 @@
         <button id="btn-discard">Descartar</button>
       </div>
 
+      <div id="selection-buttons" style="display:none;">
+        <button id="btn-confirm-selection">Confirmar</button>
+        <button id="btn-cancel-selection">Cancelar</button>
+      </div>
+
       <div id="consumables-area">
         <span class="section-title">Consumíveis:</span>
         <div id="consumables-list"></div>
@@ -127,7 +132,7 @@
         </div>
 
         <div class="shop-section" id="shop-consumables-section">
-          <div class="shop-section-label">TAROT</div>
+          <div class="shop-section-label">PACOTES</div>
           <div id="shop-consumables" class="shop-section-items"></div>
         </div>
       </div>
@@ -181,6 +186,28 @@
         <button class="modal-close" id="btn-close-deck" aria-label="Fechar">&times;</button>
       </div>
       <div id="deck-reference-grid"></div>
+    </div>
+  </div>
+
+
+  <div id="pack-modal" class="modal-overlay">
+    <div class="pack-modal-content">
+      <div class="pack-explosion-container" id="pack-explosion"></div>
+      <div class="pack-header">
+        <h3 id="pack-title">Fortuna I</h3>
+        <span id="pack-subtitle">Escolha 1 tarô</span>
+      </div>
+      <div class="pack-section">
+        <div class="pack-section-label">CARTAS DO BARALHO</div>
+        <div class="pack-cards-row" id="pack-deck-cards"></div>
+      </div>
+      <div class="pack-section">
+        <div class="pack-section-label">TARÔS DISPONÍVEIS</div>
+        <div class="pack-cards-row" id="pack-tarot-cards"></div>
+      </div>
+      <div class="pack-actions">
+        <button id="pack-close" class="pack-btn pack-btn-close">Fechar</button>
+      </div>
     </div>
   </div>
 

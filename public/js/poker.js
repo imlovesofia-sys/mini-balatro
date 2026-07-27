@@ -36,10 +36,13 @@ function evaluateFive(cards) {
   const counts = [...rankCounts.values()].sort((a, b) => b - a);
 
   const topRanks = [...rankCounts.entries()].sort((a, b) => b[1] - a[1]);
-  const scoringCards = topRanks.slice(0, Math.min(3, topRanks.length)).flatMap(([rank]) =>
-    cards.filter(c => c.rank === rank)
-  );
 
+  if (counts[0] === 5 && isFlush) {
+    return { type: POKER_HANDS.find(h => h.id === 'flushFive'), cards: sorted };
+  }
+  if (counts[0] === 5) {
+    return { type: POKER_HANDS.find(h => h.id === 'fiveOfKind'), cards: sorted };
+  }
   if (cards.length >= 5 && isFlush && isStraight) {
     const highCards = sorted.slice(-5);
     const royalRanks = new Set(['10', 'J', 'Q', 'K', 'A']);
@@ -56,7 +59,8 @@ function evaluateFive(cards) {
   }
   if (counts[0] === 3 && counts[1] === 2) {
     const threeRank = topRanks[0][0];
-    return { type: POKER_HANDS.find(h => h.id === 'fullHouse'), cards: cards.filter(c => c.rank === threeRank) };
+    const pairRank = topRanks[1][0];
+    return { type: POKER_HANDS.find(h => h.id === 'fullHouse'), cards: cards.filter(c => c.rank === threeRank || c.rank === pairRank) };
   }
   if (isFlush) {
     return { type: POKER_HANDS.find(h => h.id === 'flush'), cards: sorted.slice(-5) };
@@ -90,7 +94,7 @@ export function evaluateBestHand(cards) {
     const result = evaluateFive(combo);
     if (!best || result.type.tier > best.type.tier) {
       best = result;
-      if (best.type.id === 'royalFlush') break;
+      if (best.type.id === 'flushFive') break;
     }
   }
   return best;

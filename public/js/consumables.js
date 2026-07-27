@@ -4,17 +4,29 @@ function pickRandom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-export function applyConsumable(state, consumableIndex) {
+export function needsSelection(consumable) {
+  return consumable && consumable.selectFromHand === true;
+}
+
+export function applyConsumable(state, consumableIndex, selectedCards) {
   const c = state.consumables[consumableIndex];
   if (!c) return { ok: false, reason: 'Nada para usar' };
-  const msg = performEffect(state, c);
+
+  if (needsSelection(c)) {
+    if (!selectedCards || selectedCards.length === 0) {
+      return { ok: false, reason: 'Selecione cartas primeiro' };
+    }
+    if (selectedCards.length < (c.count || 1)) {
+      return { ok: false, reason: `Selecione ${c.count} carta(s)` };
+    }
+  }
+
+  const msg = performEffect(state, c, selectedCards);
   state.consumables.splice(consumableIndex, 1);
   state.consumableUsedThisRound = true;
 
   const tecelaJoker = state.jokers.find(j => j.effect.type === 'tarotHook');
-  if (tecelaJoker && (c.effect === 'money' || c.effect === 'randomMoney' || c.effect === 'extraHand' ||
-      c.effect === 'destroyAndMoney' || c.effect === 'convertSuit' || c.effect === 'duplicateCard' ||
-      c.effect === 'upgradeRank')) {
+  if (tecelaJoker && c.id && c.id.startsWith('t')) {
     const suit = SUITS[Math.floor(Math.random() * SUITS.length)];
     const rank = RANKS[Math.floor(Math.random() * RANKS.length)];
     state.deck.push({ rank, suit, steel: true });
@@ -23,7 +35,14 @@ export function applyConsumable(state, consumableIndex) {
   return { ok: true, message: msg };
 }
 
-function performEffect(state, c) {
+export function applyTarotDirectly(state, tarotCard, selectedCards) {
+  if (!tarotCard) return { ok: false, reason: 'Nenhum tarô selecionado' };
+
+  const msg = performEffect(state, tarotCard, selectedCards || []);
+  return { ok: true, message: msg };
+}
+
+function performEffect(state, c, selectedCards) {
   switch (c.effect) {
     case 'money':
       state.money += c.value;
@@ -37,9 +56,33 @@ function performEffect(state, c) {
       state.extraHandsPerRound += c.value;
       return '+1 mão por rodada permanentemente';
     case 'destroyAndMoney': {
-      const destroyed = destroyRandomFromDeck(state, c.destroyCount || 2);
+      if (selectedCards && selectedCards.length > 0) {
+        let destroyed = 0;
+        const handIndices = [];
+        const deckIndices = [];
+        for (const card of selectedCards) {
+          const handIdx = state.hand.indexOf(card);
+          if (handIdx !== -1) {
+            handIndices.push(handIdx);
+            destroyed++;
+          } else {
+            const deckIdx = state.deck.indexOf(card);
+            if (deckIdx !== -1) {
+              deckIndices.push(deckIdx);
+              destroyed++;
+            }
+          }
+        }
+        handIndices.sort((a, b) => b - a);
+        for (const idx of handIndices) state.hand.splice(idx, 1);
+        deckIndices.sort((a, b) => b - a);
+        for (const idx of deckIndices) state.deck.splice(idx, 1);
+        if (c.value) state.money += c.value;
+        return `Destruiu ${destroyed} carta(s)${c.value ? ` e +$${c.value}` : ''}`;
+      }
+      const destroyed2 = destroyRandomFromDeck(state, c.destroyCount || 2);
       if (c.value) state.money += c.value;
-      return `Destruiu ${destroyed} carta(s)${c.value ? ` e +$${c.value}` : ''}`;
+      return `Destruiu ${destroyed2} carta(s)${c.value ? ` e +$${c.value}` : ''}`;
     }
     case 'convertSuit': {
       const converted = convertRandomSuit(state, c.suit, c.count || 2);
@@ -72,45 +115,82 @@ function performEffect(state, c) {
       }
       return `Criou ${count} cartas de Pedra`;
     }
-    case 'familiar': {
-      destroyRandomFromDeck(state, c.destroyCount || 2);
-      if (state.jokers.length < MAX_JOKERS) {
-        const rare = JOKERS.filter(j => j.rarity === 'rare');
-        if (rare.length > 0) {
-          state.jokers.push({ ...pickRandom(rare) });
-          return 'Familiar: Curinga raro criado';
+    case 'addGold': {
+      if (!selectedCards) return 'Nenhuma carta selecionada';
+      let added = 0;
+      for (const card of selectedCards) {
+        if (card && !card.gold) {
+          card.gold = true;
+          added++;
         }
       }
-      return 'Familiar: sem espaço ou curingas raros';
+      return `Adicionou Ouro a ${added} carta(s)`;
     }
-    case 'grim': {
-      destroyRandomFromDeck(state, 1);
-      for (let i = 0; i < 2; i++) {
-        state.deck.push({ rank: 'A', suit: pickRandom(SUITS) });
+    case 'addMusical': {
+      if (!selectedCards) return 'Nenhuma carta selecionada';
+      let added = 0;
+      for (const card of selectedCards) {
+        if (card && !card.musical) {
+          card.musical = true;
+          added++;
+        }
       }
-      return 'Grim: adicionou 2 Ases';
+      return `Adicionou Carta Musical a ${added} carta(s)`;
     }
-    case 'incantation': {
-      if (state.deck.length === 0) return 'Deck vazio';
-      const idx = Math.floor(Math.random() * state.deck.length);
-      const removed = state.deck.splice(idx, 1)[0];
-      const numbers = RANKS.filter(r => !['J', 'Q', 'K', 'A'].includes(r));
-      for (let i = 0; i < 3; i++) {
-        state.deck.push({ rank: pickRandom(numbers), suit: removed.suit });
+    case 'convertHandSuit': {
+      if (!selectedCards) return 'Nenhuma carta selecionada';
+      let converted = 0;
+      for (const card of selectedCards) {
+        if (card && card.suit !== c.suit) {
+          card.suit = c.suit;
+          converted++;
+        }
       }
-      return 'Encantamento: +3 cartas do naipe';
+      return `Converteu ${converted} carta(s) para ${c.suit}`;
     }
-    case 'seance': {
-      const maxC = state.bossEffect && state.bossEffect.maxConsumables ? state.bossEffect.maxConsumables : MAX_CONSUMABLES;
-      if (state.consumables.length >= maxC) return 'Sem espaço para consumíveis';
-      state.consumables.push({ ...pickRandom(TAROT_CARDS) });
-      return 'Sessão: criou um Tarô';
+    case 'destroyFromHand': {
+      if (!selectedCards) return 'Nenhuma carta selecionada';
+      let destroyed = 0;
+      const handIndices = [];
+      const deckIndices = [];
+      for (const card of selectedCards) {
+        const handIdx = state.hand.indexOf(card);
+        if (handIdx !== -1) {
+          handIndices.push(handIdx);
+          destroyed++;
+        } else {
+          const deckIdx = state.deck.indexOf(card);
+          if (deckIdx !== -1) {
+            deckIndices.push(deckIdx);
+            destroyed++;
+          }
+        }
+      }
+      handIndices.sort((a, b) => b - a);
+      for (const idx of handIndices) state.hand.splice(idx, 1);
+      deckIndices.sort((a, b) => b - a);
+      for (const idx of deckIndices) state.deck.splice(idx, 1);
+      return `Destruiu ${destroyed} carta(s)`;
     }
-    case 'hex': {
-      const maxJ = state.bossEffect && state.bossEffect.maxJokers ? state.bossEffect.maxJokers : MAX_JOKERS;
-      if (state.jokers.length >= maxJ) return 'Sem espaço para Curingas';
-      state.jokers.push({ ...pickRandom(JOKERS) });
-      return 'Hex: criou um Curinga';
+    case 'duplicateFromHand': {
+      if (!selectedCards || selectedCards.length === 0) return 'Nenhuma carta selecionada';
+      const card = selectedCards[0];
+      if (!card) return 'Carta inválida';
+      state.deck.push({ rank: card.rank, suit: card.suit, gold: card.gold, musical: card.musical });
+      return `Duplicou ${card.rank} de ${card.suit} para o deck`;
+    }
+    case 'upgradeFromHand': {
+      if (!selectedCards) return 'Nenhuma carta selecionada';
+      let upgraded = 0;
+      for (const card of selectedCards) {
+        if (!card || card.stone) continue;
+        const rIdx = RANKS.indexOf(card.rank);
+        if (rIdx < RANKS.length - 1) {
+          card.rank = RANKS[rIdx + 1];
+          upgraded++;
+        }
+      }
+      return `Aprimorou ${upgraded} carta(s) em +1 rank`;
     }
     default:
       return 'Efeito desconhecido';

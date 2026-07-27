@@ -208,14 +208,6 @@ export function sfxJokerProc() {
   setTimeout(() => sfxTone(1800, 0.08, 'triangle', 0.05), 80);
 }
 
-export function sfxTotalCalc() {
-  if (sfxMuted) return;
-  ensureCtx();
-  sfxTone(1600, 0.15, 'sine', 0.12);
-  sfxTone(2000, 0.12, 'sine', 0.08);
-  sfxTone(2400, 0.1, 'triangle', 0.05);
-}
-
 export function sfxClick() {
   if (sfxMuted) return;
   ensureCtx();
@@ -256,4 +248,73 @@ export function sfxDiscard() {
   ensureCtx();
   sfxTone(300, 0.08, 'sawtooth', 0.06);
   sfxTone(200, 0.06, 'triangle', 0.04);
+}
+
+export function sfxSintonia(repIndex) {
+  if (sfxMuted) return;
+  ensureCtx();
+  const baseFreq = 880;
+  const semitoneMultiplier = Math.pow(2, 1 / 12);
+  const freq = baseFreq * Math.pow(semitoneMultiplier, repIndex * 2);
+  sfxTone(freq, 0.15, 'sine', 0.12);
+  setTimeout(() => sfxTone(freq * 1.5, 0.1, 'triangle', 0.06), 50);
+}
+
+export function sfxExplosion() {
+  if (sfxMuted) return;
+  ensureCtx();
+  const bufferSize = audioCtx.sampleRate * 0.3;
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 2);
+  }
+  const noise = audioCtx.createBufferSource();
+  noise.buffer = buffer;
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.setValueAtTime(3000, audioCtx.currentTime);
+  filter.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.3);
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+  noise.connect(filter);
+  filter.connect(gain);
+  gain.connect(sfxGain);
+  noise.start();
+  sfxTone(80, 0.25, 'sine', 0.15);
+  sfxTone(60, 0.2, 'triangle', 0.12);
+}
+
+export function sfxWhoosh() {
+  if (sfxMuted) return;
+  ensureCtx();
+  const bufferSize = audioCtx.sampleRate * 0.15;
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 3);
+  }
+  const noise = audioCtx.createBufferSource();
+  noise.buffer = buffer;
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.setValueAtTime(2000, audioCtx.currentTime);
+  filter.frequency.exponentialRampToValueAtTime(500, audioCtx.currentTime + 0.15);
+  filter.Q.value = 2;
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+  noise.connect(filter);
+  filter.connect(gain);
+  gain.connect(sfxGain);
+  noise.start();
+}
+
+export function sfxApply() {
+  if (sfxMuted) return;
+  ensureCtx();
+  sfxTone(880, 0.12, 'sine', 0.1);
+  setTimeout(() => sfxTone(1100, 0.1, 'sine', 0.08), 60);
+  setTimeout(() => sfxTone(1320, 0.08, 'triangle', 0.06), 120);
 }

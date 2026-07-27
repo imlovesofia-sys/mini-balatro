@@ -1,4 +1,4 @@
-import { JOKERS, TAROT_CARDS, SPECTRAL_CARDS, BASE_REROLL_COST, MAX_JOKERS, MAX_CONSUMABLES } from './constants.js';
+import { JOKERS, TAROT_CARDS, PACK_TIERS, MAX_JOKERS } from './constants.js';
 
 function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -20,6 +20,28 @@ function weightedPickJoker(available) {
   return available[available.length - 1];
 }
 
+function pickPackTier() {
+  const weights = [4, 4, 3, 1];
+  const total = weights.reduce((a, b) => a + b, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < weights.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return PACK_TIERS[i];
+  }
+  return PACK_TIERS[0];
+}
+
+function generatePackCards(tier) {
+  const available = [...TAROT_CARDS];
+  const result = [];
+  for (let i = 0; i < tier.options && available.length > 0; i++) {
+    const idx = Math.floor(Math.random() * available.length);
+    result.push({ ...available[idx] });
+    available.splice(idx, 1);
+  }
+  return result;
+}
+
 export function generateShopItems(state) {
   const items = [];
   const availableJokers = JOKERS.filter(j => !state.jokers.find(x => x.id === j.id));
@@ -30,15 +52,15 @@ export function generateShopItems(state) {
     availableJokers.splice(idx, 1);
     items.push({ kind: 'joker', data: joker, price: joker.cost, sold: false });
   }
-  const allConsumables = [
-    ...TAROT_CARDS.map(c => ({ kind: 'tarot', data: c, price: 3 })),
-    ...SPECTRAL_CARDS.map(c => ({ kind: 'spectral', data: c, price: 4 }))
-  ];
   for (let i = 0; i < 2; i++) {
-    const c = pick(allConsumables);
-    items.push({ kind: c.kind, data: c.data, price: c.price, sold: false });
+    const tier = pickPackTier();
+    items.push({ kind: 'pack', tier, price: tier.price, sold: false });
   }
   return items;
+}
+
+export function openPack(tier) {
+  return generatePackCards(tier);
 }
 
 export function rerollShop(state) {
@@ -76,10 +98,6 @@ export function buyItem(state, index) {
     if (rotaJoker) {
       rotaJoker.bonusMult = (rotaJoker.bonusMult || 0) + rotaJoker.effect.value;
     }
-  } else {
-    const maxC = state.bossEffect && state.bossEffect.maxConsumables ? state.bossEffect.maxConsumables : MAX_CONSUMABLES;
-    if (state.consumables.length >= maxC) return { ok: false, reason: 'Sem espaço para consumíveis' };
-    state.consumables.push(item.data);
   }
   state.money -= item.price;
   state.shopPurchases++;

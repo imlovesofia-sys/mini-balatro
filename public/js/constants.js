@@ -25,7 +25,9 @@ export const POKER_HANDS = [
   { id: 'fullHouse', name: 'Full House', chips: 40, mult: 4, tier: 6 },
   { id: 'four', name: 'Quadra', chips: 60, mult: 7, tier: 7 },
   { id: 'straightFlush', name: 'Straight Flush', chips: 100, mult: 8, tier: 8 },
-  { id: 'royalFlush', name: 'Royal Flush', chips: 100, mult: 8, tier: 9 }
+  { id: 'royalFlush', name: 'Royal Flush', chips: 100, mult: 8, tier: 9 },
+  { id: 'fiveOfKind', name: 'Five of a Kind', chips: 120, mult: 10, tier: 10 },
+  { id: 'flushFive', name: 'Flush Five', chips: 120, mult: 12, tier: 11 }
 ];
 
 export const HAND_BY_ID = Object.fromEntries(POKER_HANDS.map(h => [h.id, h]));
@@ -105,23 +107,26 @@ export const TAROT_CARDS = [
   { id: 't1', name: 'O Mago', desc: '+$3', effect: 'money', value: 3 },
   { id: 't2', name: 'A Sacerdotisa', desc: '+$5', effect: 'money', value: 5 },
   { id: 't3', name: 'A Imperatriz', desc: '+1 mão por rodada (permanente)', effect: 'extraHand', value: 1 },
-  { id: 't4', name: 'O Imperador', desc: 'Destrói 2 cartas do deck e ganha +$3', effect: 'destroyAndMoney', destroyCount: 2, value: 3 },
-  { id: 't5', name: 'O Hierofante', desc: 'Converte 2 cartas aleatórias do deck para ♥', effect: 'convertSuit', suit: 'Hearts', count: 2 },
-  { id: 't6', name: 'Os Amantes', desc: 'Duplica 1 carta aleatória do deck', effect: 'duplicateCard', count: 1 },
-  { id: 't7', name: 'O Carro', desc: 'Destrói 3 cartas aleatórias do deck', effect: 'destroyAndMoney', destroyCount: 3, value: 0 },
-  { id: 't8', name: 'A Justiça', desc: 'Converte 2 cartas aleatórias do deck para ♠', effect: 'convertSuit', suit: 'Spades', count: 2 },
-  { id: 't9', name: 'Roda da Fortuna', desc: 'Ganha $3 a $12 aleatório', effect: 'randomMoney', min: 3, max: 12 },
-  { id: 't10', name: 'A Força', desc: 'Aumenta rank de 2 cartas aleatórias em 1', effect: 'upgradeRank', count: 2 },
-  { id: 't11', name: 'A Pedra', desc: 'Cria 2 cartas de Pedra no deck', effect: 'createStone', count: 2 }
+  { id: 't4', name: 'O Corvo', desc: 'Destrói 2 cartas da mão e ganha +$3', effect: 'destroyAndMoney', destroyCount: 2, value: 3, selectFromHand: true },
+  { id: 't6', name: 'Lovely', desc: 'Converte 2 cartas da mão para ♥', effect: 'convertHandSuit', suit: 'Hearts', count: 2, selectFromHand: true },
+  { id: 't8', name: 'Os Amantes', desc: 'Duplica 1 carta da mão para o deck', effect: 'duplicateFromHand', count: 1, selectFromHand: true },
+  { id: 't9', name: 'A Tempestade', desc: 'Destrói 3 cartas da mão', effect: 'destroyFromHand', destroyCount: 3, selectFromHand: true },
+  { id: 't10', name: 'A Roleta', desc: 'Ganha $3 a $12 aleatório', effect: 'randomMoney', min: 3, max: 12 },
+  { id: 't11', name: 'O Martelo', desc: 'Aumenta rank de 2 cartas da mão em +1', effect: 'upgradeFromHand', count: 2, selectFromHand: true },
+  { id: 't14', name: 'A Força', desc: 'Adiciona Ouro a 2 cartas da mão', effect: 'addGold', count: 2, selectFromHand: true },
+  { id: 't15', name: 'A Justiça', desc: 'Adiciona Carta Musical a 2 cartas da mão', effect: 'addMusical', count: 2, selectFromHand: true },
+  { id: 't16', name: 'Boca de Fumo', desc: 'Cria 2 cartas de Pedra no deck', effect: 'createStone', count: 2 },
+  { id: 't17', name: 'O Negão', desc: 'Converte 2 cartas da mão para ♠', effect: 'convertHandSuit', suit: 'Spades', count: 2, selectFromHand: true },
+  { id: 't18', name: 'Ganância', desc: 'Converte 2 cartas da mão para ♦', effect: 'convertHandSuit', suit: 'Diamonds', count: 2, selectFromHand: true }
 ];
 
-export const SPECTRAL_CARDS = [
-  { id: 's1', name: 'Familiar', desc: 'Destrói 2 cartas do deck e cria 1 Curinga raro', effect: 'familiar', destroyCount: 2 },
-  { id: 's2', name: 'Grim', desc: 'Destrói 1 carta e adiciona 2 As aleatórios', effect: 'grim', destroyCount: 1 },
-  { id: 's3', name: 'Encantamento', desc: 'Destrói 1 carta e adiciona 3 números aleatórios do mesmo naipe', effect: 'incantation', destroyCount: 1 },
-  { id: 's4', name: 'Sessão', desc: 'Cria 1 Tarô aleatório na bolsa', effect: 'seance' },
-  { id: 's5', name: 'Hex', desc: 'Cria 1 Curinga aleatório (se tiver espaço)', effect: 'hex' },
-  { id: 's6', name: 'Médium', desc: '+$10', effect: 'money', value: 10 }
+export const SPECTRAL_CARDS = [];
+
+export const PACK_TIERS = [
+  { id: 'I', name: 'Fortuna I', picks: 1, options: 2, deckCards: 4, price: 3 },
+  { id: 'II', name: 'Fortuna II', picks: 1, options: 2, deckCards: 5, price: 3 },
+  { id: 'III', name: 'Fortuna III', picks: 1, options: 4, deckCards: 6, price: 5 },
+  { id: 'IV', name: 'Fortuna IV', picks: 2, options: 4, deckCards: 6, price: 8 }
 ];
 
 export const STARTING_MONEY = 4;
