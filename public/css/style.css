@@ -316,7 +316,21 @@ h1, h2 { color: #ffd700; text-align: center; }
   justify-content: center;
   gap: 12px;
   flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: visible;
+  scrollbar-width: thin;
+  scrollbar-color: #fbbf24 transparent;
+  padding-bottom: 6px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
+#hand-cards::-webkit-scrollbar { height: 8px; }
+#hand-cards::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
+#hand-cards::-webkit-scrollbar-thumb {
+  background: #fbbf24;
+  border-radius: 4px;
+}
+#hand-cards::-webkit-scrollbar-thumb:hover { background: #f59e0b; }
 
 .card-wrapper {
   cursor: pointer;
