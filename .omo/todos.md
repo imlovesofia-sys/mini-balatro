@@ -1,0 +1,4 @@
+- [ ] 1. Redesign base — tipografia paleta global fundos botões globais
+- [ ] 2. Redesign menu principal como jogar pódio gameover
+- [ ] 3. Redesign layout jogo — painéis cartas curingas consumíveis
+- [ ] 4. Redesign loja + modais (pack hands-ref deck-ref)

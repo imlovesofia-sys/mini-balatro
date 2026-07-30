@@ -255,7 +255,7 @@ export function calculateSintonia(playedCards, jokers, stateContext, baseChips, 
   for (const [key, group] of musicalGroups) {
     if (group.length < 2) continue;
 
-    for (let rep = 1; rep < group.length - 1; rep++) {
+    for (let rep = 1; rep < group.length; rep++) {
       let chips = baseChips;
       let mult = baseMult;
       const repEvents = [];

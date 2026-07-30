@@ -461,6 +461,7 @@ async function applyPackLegendary(tarotIndex) {
     const slot = document.querySelectorAll('#pack-tarot-cards .pack-card-slot')[tarotIndex];
     if (slot) slot.classList.remove('selected', 'tarot-glow');
     packState.selectedTarots = [];
+    packState.phase = 'tarot';
     return;
   }
 

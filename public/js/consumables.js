@@ -53,7 +53,7 @@ function performEffect(state, c, selectedCards) {
       return `+${amt} de dinheiro (Roda da Fortuna)`;
     }
     case 'extraHand':
-      state.extraHandsPerRound += c.value;
+      state.extraHandsPerRound = Math.min(10, state.extraHandsPerRound + c.value);
       return '+1 mão por rodada permanentemente';
     case 'destroyAndMoney': {
       if (selectedCards && selectedCards.length > 0) {
@@ -152,31 +152,22 @@ function performEffect(state, c, selectedCards) {
       if (!selectedCards) return 'Nenhuma carta selecionada';
       let destroyed = 0;
       const handIndices = [];
-      const deckIndices = [];
       for (const card of selectedCards) {
         const handIdx = state.hand.indexOf(card);
         if (handIdx !== -1) {
           handIndices.push(handIdx);
           destroyed++;
-        } else {
-          const deckIdx = state.deck.indexOf(card);
-          if (deckIdx !== -1) {
-            deckIndices.push(deckIdx);
-            destroyed++;
-          }
         }
       }
       handIndices.sort((a, b) => b - a);
       for (const idx of handIndices) state.hand.splice(idx, 1);
-      deckIndices.sort((a, b) => b - a);
-      for (const idx of deckIndices) state.deck.splice(idx, 1);
       return `Destruiu ${destroyed} carta(s)`;
     }
     case 'duplicateFromHand': {
       if (!selectedCards || selectedCards.length === 0) return 'Nenhuma carta selecionada';
       const card = selectedCards[0];
       if (!card) return 'Carta inválida';
-      state.deck.push({ rank: card.rank, suit: card.suit, gold: card.gold, musical: card.musical });
+      state.deck.push({ rank: card.rank, suit: card.suit, gold: card.gold, musical: card.musical, stone: card.stone, steel: card.steel });
       return `Duplicou ${card.rank} de ${card.suit} para o deck`;
     }
     case 'upgradeFromHand': {
