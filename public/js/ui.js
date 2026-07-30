@@ -45,6 +45,10 @@ export function buildJokerStatus(joker, state) {
       if (state && state.destroyedByBug) lines.push(`Cartas destruídas: ${state.destroyedByBug}`);
       break;
     }
+    case 'mikuMusicalDouble': {
+      lines.push('×2 Fichas (sintonia)');
+      break;
+    }
   }
 
   return lines;
@@ -317,9 +321,21 @@ export async function openPackAnimation(tier, tarotCards, deckCards) {
     slot.className = 'pack-card-slot pack-card-tooltip';
     slot.dataset.index = i;
     const t = tarotCards[i];
-    const hasImage = t.id && t.id.match(/^t\d+$/) || t.id && t.id.match(/^s\d+$/);
-    if (hasImage) {
-      const imgPath = t.id.match(/^t\d+$/) ? `/img/fortuna/${t.id}.png` : `/img/fortuna/${t.id}.png`;
+    const isLegendary = !!t.isLegendary;
+    const hasTarotImg = t.id && (t.id.match(/^t\d+$/) || t.id.match(/^s\d+$/));
+    const hasJokerImg = t.id && t.id.match(/^j\d+$/);
+    if (isLegendary && hasJokerImg) {
+      slot.style.backgroundImage = `url('/img/jokers/${t.id}.png')`;
+      slot.style.backgroundSize = 'cover';
+      slot.style.backgroundPosition = 'center';
+      slot.style.borderColor = '#22d3ee';
+      slot.innerHTML = `<div class="pack-legendary-badge">LENDÁRIA</div>
+        <div class="joker-tooltip">
+          <div class="tooltip-title">${t.name}</div>
+          <div class="tooltip-desc">${t.desc}</div>
+        </div>`;
+    } else if (hasTarotImg) {
+      const imgPath = `/img/fortuna/${t.id}.png`;
       slot.innerHTML = `<img src="${imgPath}" alt="${t.name}">
         <div class="joker-tooltip">
           <div class="tooltip-title">${t.name}</div>

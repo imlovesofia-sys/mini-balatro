@@ -103,6 +103,11 @@ export const JOKERS = [
     effect: { type: 'suitCombo' }, desc: '♣ e ♦ juntos → +15 Fichas' }
 ];
 
+export const LEGENDARY_JOKERS = [
+  { id: 'j41', name: 'Hatsune Miku', rarity: 'legendary', cost: 20, spriteIndex: 20,
+    effect: { type: 'mikuMusicalDouble' }, desc: 'Cartas musicais reativadas (sintonia) dão o dobro de Fichas' }
+];
+
 export const TAROT_CARDS = [
   { id: 't1', name: 'O Mago', desc: '+$3', effect: 'money', value: 3 },
   { id: 't2', name: 'A Sacerdotisa', desc: '+$5', effect: 'money', value: 5 },

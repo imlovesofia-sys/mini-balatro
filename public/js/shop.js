@@ -1,4 +1,6 @@
-import { JOKERS, TAROT_CARDS, PACK_TIERS, MAX_JOKERS } from './constants.js';
+import { JOKERS, LEGENDARY_JOKERS, TAROT_CARDS, PACK_TIERS, MAX_JOKERS } from './constants.js';
+
+const MIKU_DROP_CHANCE = 0.25;
 
 function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -31,7 +33,7 @@ function pickPackTier() {
   return PACK_TIERS[0];
 }
 
-function generatePackCards(tier) {
+function generatePackCards(tier, state) {
   const available = [...TAROT_CARDS];
   const result = [];
   for (let i = 0; i < tier.options && available.length > 0; i++) {
@@ -39,6 +41,16 @@ function generatePackCards(tier) {
     result.push({ ...available[idx] });
     available.splice(idx, 1);
   }
+
+  if (tier.id === 'IV' && state && state.jokers) {
+    const ownedIds = new Set(state.jokers.map(j => j.id));
+    const legendaries = LEGENDARY_JOKERS.filter(j => !ownedIds.has(j.id));
+    if (legendaries.length > 0 && Math.random() < MIKU_DROP_CHANCE) {
+      const miku = legendaries[Math.floor(Math.random() * legendaries.length)];
+      result.unshift({ ...miku, isLegendary: true });
+    }
+  }
+
   return result;
 }
 
@@ -59,8 +71,8 @@ export function generateShopItems(state) {
   return items;
 }
 
-export function openPack(tier) {
-  return generatePackCards(tier);
+export function openPack(tier, state) {
+  return generatePackCards(tier, state);
 }
 
 export function rerollShop(state) {

@@ -222,6 +222,7 @@ export function calculateScore(playedCards, scoringIdx, handType, jokers, stateC
       case 'onReroll':
       case 'tarotHook':
       case 'extraSlot':
+      case 'mikuMusicalDouble':
         break;
     }
   });
@@ -264,11 +265,23 @@ export function calculateSintonia(playedCards, jokers, stateContext, baseChips, 
         grayIndices.push(group[g].index);
       }
 
+      const hasMikuMusicalDouble = jokers.some(j => j.effect.type === 'mikuMusicalDouble');
+
       for (let c = rep; c < group.length; c++) {
         const target = group[c];
-        const v = target.card.stone ? 50 : (RANK_VALUE[target.card.rank] || 0);
+        let v = target.card.stone ? 50 : (RANK_VALUE[target.card.rank] || 0);
+        if (hasMikuMusicalDouble) v *= 2;
         chips += v;
         repEvents.push({ type: 'sintoniaCard', cardIndex: target.index, kind: 'chips', value: v, chips, mult, repIndex: rep });
+
+        if (hasMikuMusicalDouble) {
+          const mikuJoker = jokers.find(j => j.effect.type === 'mikuMusicalDouble');
+          if (mikuJoker) {
+            const mIdx = jokers.indexOf(mikuJoker);
+            const mikuBonus = v / 2;
+            repEvents.push({ type: 'sintoniaJoker', jokerIndex: mIdx, name: mikuJoker.name, kind: 'chips', value: mikuBonus, chips, mult, repIndex: rep });
+          }
+        }
 
         const suitMasteryJoker = jokers.find(j => j.effect.type === 'suitMastery');
         if (suitMasteryJoker && suitMasteryJoker.masteredSuit && target.card.suit === suitMasteryJoker.masteredSuit && !suitMasteryJoker.suitMasteryUsedInHand) {
@@ -376,6 +389,7 @@ export function calculateSintonia(playedCards, jokers, stateContext, baseChips, 
           case 'allBlackHand':
           case 'suitCombo':
           case 'probabilityDouble':
+          case 'mikuMusicalDouble':
             break;
         }
       });

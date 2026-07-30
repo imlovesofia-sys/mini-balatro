@@ -385,7 +385,7 @@ async function startPackFlow(shopIndex) {
   item.sold = true;
   renderShop();
 
-  const tarotCards = openPack(item.tier);
+  const tarotCards = openPack(item.tier, state);
   const shuffledDeck = [...state.deck].sort(() => Math.random() - 0.5);
   const deckCards = shuffledDeck.slice(0, item.tier.deckCards);
 
@@ -424,6 +424,12 @@ function onPackTarotClick(slot, index) {
   selectTarotPack(slot);
 
   const tarot = packState.tarotCards[index];
+
+  if (tarot.isLegendary) {
+    applyPackLegendary(index);
+    return;
+  }
+
   const info = getTarotSelectionInfo(tarot);
 
   packState.selectedTarots = [index];
@@ -445,6 +451,36 @@ function onPackTarotClick(slot, index) {
   packState.phase = 'deck-select';
   const labels = { destroy: 'Selecione para destruir', convert: 'Selecione para converter', duplicate: 'Selecione para duplicar', upgrade: 'Selecione para melhorar' };
   document.getElementById('pack-subtitle').textContent = `${labels[info.type] || 'Selecione'} (${info.required} carta(s))`;
+}
+
+async function applyPackLegendary(tarotIndex) {
+  const legendary = packState.tarotCards[tarotIndex];
+  const maxJ = state.bossEffect && state.bossEffect.maxJokers ? state.bossEffect.maxJokers : 5;
+  if (state.jokers.length >= maxJ) {
+    showMessage('Sem espaço para Curingas');
+    const slot = document.querySelectorAll('#pack-tarot-cards .pack-card-slot')[tarotIndex];
+    if (slot) slot.classList.remove('selected', 'tarot-glow');
+    packState.selectedTarots = [];
+    return;
+  }
+
+  sfxApply();
+  state.jokers.push({ ...legendary });
+  showMessage(`${legendary.name} adquirida! 🎤`);
+
+  packState.picksLeft--;
+  packState.tarotCards.splice(tarotIndex, 1);
+  packState.selectedTarots = [];
+
+  if (packState.picksLeft <= 0) {
+    await closePackAnimation();
+    packState.active = false;
+    renderShop();
+    renderGame();
+    return;
+  }
+
+  rebuildPackUI();
 }
 
 async function applyPackTarot(tarotIndex) {
@@ -571,8 +607,19 @@ function rebuildPackUI() {
     s.className = 'pack-card-slot pack-card-tooltip';
     s.dataset.index = i;
     const t = packState.tarotCards[i];
-    const hasImage = t.id && (t.id.match(/^t\d+$/) || t.id.match(/^s\d+$/));
-    if (hasImage) {
+    const isLegendary = !!t.isLegendary;
+    const hasTarotImg = t.id && (t.id.match(/^t\d+$/) || t.id.match(/^s\d+$/));
+    const hasJokerImg = t.id && t.id.match(/^j\d+$/);
+    if (isLegendary && hasJokerImg) {
+      s.style.backgroundImage = `url('/img/jokers/${t.id}.png')`;
+      s.style.backgroundSize = 'cover';
+      s.style.backgroundPosition = 'center';
+      s.innerHTML = `<div class="pack-legendary-badge">LENDÁRIA</div>
+        <div class="joker-tooltip">
+          <div class="tooltip-title">${t.name}</div>
+          <div class="tooltip-desc">${t.desc}</div>
+        </div>`;
+    } else if (hasTarotImg) {
       s.innerHTML = `<img src="/img/fortuna/${t.id}.png" alt="${t.name}">
         <div class="joker-tooltip">
           <div class="tooltip-title">${t.name}</div>
