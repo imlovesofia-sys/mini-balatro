@@ -206,6 +206,7 @@ export function discardHand() {
   const discardedCards = indices.map(i => state.hand[i]);
 
   discardedCards.forEach(card => {
+    if (card.stone || !card.suit) return;
     state.suitDiscardCounts[card.suit]++;
   });
 

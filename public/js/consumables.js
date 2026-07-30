@@ -59,24 +59,15 @@ function performEffect(state, c, selectedCards) {
       if (selectedCards && selectedCards.length > 0) {
         let destroyed = 0;
         const handIndices = [];
-        const deckIndices = [];
         for (const card of selectedCards) {
           const handIdx = state.hand.indexOf(card);
           if (handIdx !== -1) {
             handIndices.push(handIdx);
             destroyed++;
-          } else {
-            const deckIdx = state.deck.indexOf(card);
-            if (deckIdx !== -1) {
-              deckIndices.push(deckIdx);
-              destroyed++;
-            }
           }
         }
         handIndices.sort((a, b) => b - a);
         for (const idx of handIndices) state.hand.splice(idx, 1);
-        deckIndices.sort((a, b) => b - a);
-        for (const idx of deckIndices) state.deck.splice(idx, 1);
         if (c.value) state.money += c.value;
         return `Destruiu ${destroyed} carta(s)${c.value ? ` e +$${c.value}` : ''}`;
       }
@@ -202,9 +193,10 @@ function destroyRandomFromDeck(state, count) {
 function convertRandomSuit(state, suit, count) {
   let converted = 0;
   for (let i = 0; i < count; i++) {
-    if (state.deck.length === 0) break;
-    const idx = Math.floor(Math.random() * state.deck.length);
-    state.deck[idx].suit = suit;
+    const nonStone = state.deck.filter(c => !c.stone);
+    if (nonStone.length === 0) break;
+    const target = nonStone[Math.floor(Math.random() * nonStone.length)];
+    target.suit = suit;
     converted++;
   }
   return converted;

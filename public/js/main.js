@@ -155,7 +155,16 @@ async function onPlayHand() {
   const handBefore = state.hand.length;
   const selectedArr = [...state.selectedIndices].sort((a, b) => a - b);
 
-  const result = Game.playHand();
+  let result;
+  try {
+    result = Game.playHand();
+  } catch (e) {
+    console.error('playHand error:', e);
+    showMessage('Erro interno ao jogar');
+    renderGame();
+    busy = false;
+    return;
+  }
   if (!result.ok) {
     showMessage(result.reason);
     renderGame();
@@ -221,7 +230,16 @@ async function onDiscard() {
   const selectedCount = state.selectedIndices.size;
   await animateCardsOut(handContainer, state.selectedIndices, 'discard');
 
-  const result = Game.discardHand();
+  let result;
+  try {
+    result = Game.discardHand();
+  } catch (e) {
+    console.error('discardHand error:', e);
+    showMessage('Erro interno ao descartar');
+    renderGame();
+    busy = false;
+    return;
+  }
   if (!result.ok) {
     showMessage(result.reason);
     renderGame();
@@ -338,7 +356,14 @@ function onBuy(index) {
     startPackFlow(index);
     return;
   }
-  const result = Game.doBuyItem(index);
+  let result;
+  try {
+    result = Game.doBuyItem(index);
+  } catch (e) {
+    console.error('doBuyItem error:', e);
+    showMessage('Erro interno ao comprar');
+    return;
+  }
   if (!result.ok) {
     showMessage(result.reason);
     return;
