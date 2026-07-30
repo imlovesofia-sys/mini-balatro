@@ -21,6 +21,17 @@ export function calculateScore(playedCards, scoringIdx, handType, jokers, stateC
     chips += v;
     events.push({ type: 'card', cardIndex: i, kind: 'chips', value: v, chips, mult });
 
+    const suitMasteryJoker = jokers.find(j => j.effect.type === 'suitMastery');
+    if (suitMasteryJoker && suitMasteryJoker.masteredSuit && card.suit === suitMasteryJoker.masteredSuit && !suitMasteryJoker.suitMasteryUsedInHand) {
+      const sBonus = suitMasteryJoker.suitBonus || 0;
+      if (sBonus > 0) {
+        chips += sBonus;
+        suitMasteryJoker.suitMasteryUsedInHand = true;
+        const jIdx = jokers.indexOf(suitMasteryJoker);
+        events.push({ type: 'joker', jokerIndex: jIdx, name: suitMasteryJoker.name, kind: 'chips', value: sBonus, chips, mult });
+      }
+    }
+
     jokers.forEach((joker, j) => {
       const e = joker.effect;
       const emit = (kind, value) =>
@@ -196,11 +207,6 @@ export function calculateScore(playedCards, scoringIdx, handType, jokers, stateC
         break;
       }
       case 'suitMastery': {
-        const sBonus = joker.suitBonus || 0;
-        if (sBonus > 0) {
-          chips += sBonus;
-          emit('chips', sBonus);
-        }
         break;
       }
       case 'perSuit':
@@ -263,6 +269,17 @@ export function calculateSintonia(playedCards, jokers, stateContext, baseChips, 
         const v = target.card.stone ? 50 : (RANK_VALUE[target.card.rank] || 0);
         chips += v;
         repEvents.push({ type: 'sintoniaCard', cardIndex: target.index, kind: 'chips', value: v, chips, mult, repIndex: rep });
+
+        const suitMasteryJoker = jokers.find(j => j.effect.type === 'suitMastery');
+        if (suitMasteryJoker && suitMasteryJoker.masteredSuit && target.card.suit === suitMasteryJoker.masteredSuit && !suitMasteryJoker.suitMasteryUsedInHand) {
+          const sBonus = suitMasteryJoker.suitBonus || 0;
+          if (sBonus > 0) {
+            chips += sBonus;
+            suitMasteryJoker.suitMasteryUsedInHand = true;
+            const jIdx = jokers.indexOf(suitMasteryJoker);
+            repEvents.push({ type: 'sintoniaJoker', jokerIndex: jIdx, name: suitMasteryJoker.name, kind: 'chips', value: sBonus, chips, mult, repIndex: rep });
+          }
+        }
 
         jokers.forEach((joker, j) => {
           const e = joker.effect;
@@ -407,14 +424,15 @@ export function applyRoundEndRewards(jokers, stateContext) {
 
   if (hasSuitMastery && stateContext.masteredSuit) {
     const suit = stateContext.masteredSuit;
-    const bonus = stateContext.deck.filter(c => c.suit === suit).length * 15;
-    if (bonus > 0) {
-      jokers.forEach(j => {
-        if (j.effect.type === 'suitMastery') {
-          j.suitBonus = (j.suitBonus || 0) + bonus;
-        }
-      });
-    }
+    const discardCount = (stateContext.suitDiscardCounts && stateContext.suitDiscardCounts[suit]) || 0;
+    const bonus = discardCount * 15;
+    jokers.forEach(j => {
+      if (j.effect.type === 'suitMastery') {
+        j.suitBonus = bonus;
+        j.masteredSuit = suit;
+        j.suitMasteryUsedInHand = false;
+      }
+    });
   }
 
   const goldCards = stateContext.hand.filter(c => c.gold).length;

@@ -111,7 +111,7 @@ export function renderGame(opts = {}) {
   document.getElementById('deck-count').textContent = `${state.deck.length} cartas`;
 
   renderHand(state.hand, state.selectedIndices, document.getElementById('hand-cards'), opts.newCards || 0, updateEvalPreview, state.hasExtraSlot);
-  renderJokers(state.jokers, document.getElementById('jokers-list'), onSell);
+  renderJokers(state.jokers, document.getElementById('jokers-list'), onSell, state);
   renderConsumables(state.consumables, document.getElementById('consumables-list'), onUseConsumable);
   updateEvalPreview();
 }
@@ -328,7 +328,7 @@ function renderShop() {
     }
   });
 
-  renderJokers(state.jokers, document.getElementById('shop-owned-list'), onSell);
+  renderJokers(state.jokers, document.getElementById('shop-owned-list'), onSell, state);
 }
 
 function onBuy(index) {

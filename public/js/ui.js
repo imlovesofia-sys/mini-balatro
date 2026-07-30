@@ -10,6 +10,46 @@ export function getJokerImageStyle(joker) {
   };
 }
 
+export function buildJokerStatus(joker, state) {
+  const e = joker.effect;
+  const lines = [];
+
+  switch (e.type) {
+    case 'suitMastery': {
+      const counts = state && state.suitDiscardCounts;
+      if (counts) {
+        for (const [suit, count] of Object.entries(counts)) {
+          if (count > 0) {
+            lines.push(`${SUIT_SYMBOL[suit] || suit} descartado: ${count}`);
+          }
+        }
+      }
+      if (joker.masteredSuit) {
+        lines.push(`Naipe mestre: ${SUIT_SYMBOL[joker.masteredSuit] || joker.masteredSuit}`);
+        lines.push(`+${joker.suitBonus || 0} Fichas (1ª carta)`);
+      }
+      break;
+    }
+    case 'shopPurchaseBonus': {
+      lines.push(`Mult acumulado: +${joker.bonusMult || 0}`);
+      break;
+    }
+    case 'overclock': {
+      const mult = state && state.overclockMultiplier != null ? state.overclockMultiplier : 5;
+      lines.push(`×${mult} Mult restante`);
+      break;
+    }
+    case 'destroyOnDiscard': {
+      const xBonus = 1 + (joker.bonusXMult || 0);
+      lines.push(`×${xBonus.toFixed(1)} Mult`);
+      if (state && state.destroyedByBug) lines.push(`Cartas destruídas: ${state.destroyedByBug}`);
+      break;
+    }
+  }
+
+  return lines;
+}
+
 export function cardToHTML(card, selected = false) {
   if (card.stone) {
     return `<div class="card stone ${selected ? 'selected' : ''}" style="background:linear-gradient(135deg,#78716c,#57534e);border-color:#44403c;">
@@ -60,6 +100,12 @@ export function renderHand(hand, selectedIndices, container, newCount = 0, onSel
     });
     container.appendChild(div);
   });
+
+  if (container.requestCenterCheck) cancelAnimationFrame(container.requestCenterCheck);
+  container.requestCenterCheck = requestAnimationFrame(() => {
+    const hasOverflow = container.scrollWidth > container.clientWidth + 2;
+    container.classList.toggle('centered-when-fits', !hasOverflow);
+  });
 }
 
 export function animateCardsOut(container, indices, type) {
@@ -79,18 +125,22 @@ export function animateCardsOut(container, indices, type) {
   });
 }
 
-export function renderJokers(jokers, container, onSell = null) {
+export function renderJokers(jokers, container, onSell = null, state = null) {
   container.innerHTML = '';
   jokers.forEach((j, idx) => {
     const div = document.createElement('div');
     div.className = `joker rarity-${j.rarity}`;
     Object.assign(div.style, getJokerImageStyle(j));
     const sellPrice = Math.max(1, j.cost - 3);
+    const statusLines = state ? buildJokerStatus(j, state) : [];
+    const statusHtml = statusLines.length > 0
+      ? `<div class="tooltip-stats">${statusLines.map(l => `<div>${l}</div>`).join('')}</div>`
+      : '';
     div.innerHTML = `
       <div class="joker-name">${j.name}</div>
       <div class="joker-tooltip">
         <div class="tooltip-title">${j.name}</div>
-        <div class="tooltip-desc">${j.desc}</div>
+        <div class="tooltip-desc">${j.desc}</div>${statusHtml}
       </div>
       ${onSell ? `<button class="sell-btn" data-idx="${idx}">Vender ($${sellPrice})</button>` : ''}
     `;

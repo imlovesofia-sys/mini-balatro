@@ -34,6 +34,14 @@ export function startBlind() {
   state.firstActionThisRound = null;
   state.perfectDiscardTriggered = false;
   state.suitDiscardCounts = { Hearts: 0, Diamonds: 0, Clubs: 0, Spades: 0 };
+  state.masteredSuit = null;
+  state.jokers.forEach(j => {
+    if (j.effect.type === 'suitMastery') {
+      j.masteredSuit = null;
+      j.suitBonus = 0;
+      j.suitMasteryUsedInHand = false;
+    }
+  });
   state.handsPlayedThisRound = 0;
   state.handsPlayedWithDiamonds = 0;
 
@@ -90,6 +98,12 @@ export function playHand() {
   if (state.bossEffect && state.bossEffect.applies) {
     cardAllowed = state.bossEffect.applies;
   }
+
+  state.jokers.forEach(j => {
+    if (j.effect.type === 'suitMastery') {
+      j.suitMasteryUsedInHand = false;
+    }
+  });
 
   const scoreResult = calculateScore(handCards, scoringIdx, result.type, state.jokers, {
     money: state.money,
@@ -195,10 +209,18 @@ export function discardHand() {
     state.suitDiscardCounts[card.suit]++;
   });
 
-  const maxSuit = Object.entries(state.suitDiscardCounts)
-    .sort((a, b) => b[1] - a[1])[0];
-  if (maxSuit[1] > 0) {
-    state.masteredSuit = maxSuit[0];
+  const maxCount = Math.max(...Object.values(state.suitDiscardCounts));
+  if (maxCount > 0) {
+    const topSuits = Object.entries(state.suitDiscardCounts)
+      .filter(([, count]) => count === maxCount)
+      .map(([suit]) => suit);
+    state.masteredSuit = topSuits[Math.floor(Math.random() * topSuits.length)];
+    state.jokers.forEach(j => {
+      if (j.effect.type === 'suitMastery') {
+        j.masteredSuit = state.masteredSuit;
+        j.suitBonus = maxCount * 15;
+      }
+    });
   }
 
   discardFromHand(state, indices);

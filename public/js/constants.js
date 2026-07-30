@@ -76,7 +76,7 @@ export const JOKERS = [
   { id: 'j27', name: 'O Terminal', rarity: 'uncommon', cost: 6, spriteIndex: 6,
     effect: { type: 'allBlackHand' }, desc: 'Mão só com ♣/♠ → ×1.5 Mult' },
   { id: 'j28', name: 'Autômato Sophia', rarity: 'rare', cost: 7, spriteIndex: 7,
-    effect: { type: 'suitMastery' }, desc: 'Aprende naipe mais descartado; +15 Fichas永久' },
+    effect: { type: 'suitMastery' }, desc: 'Naipe mais descartado vira mestre; +15 fichas por descarte na 1ª carta do naipe que pontuar em cada mão (reseta ao trocar de blind)' },
   { id: 'j29', name: 'Bug de Sintaxe', rarity: 'rare', cost: 8, spriteIndex: 8,
     effect: { type: 'destroyOnDiscard' }, desc: 'Destrói 1 carta a cada descarte; +0.5X Mult永久' },
   { id: 'j30', name: 'Socket Antigo', rarity: 'uncommon', cost: 5, spriteIndex: 9,
