@@ -319,8 +319,8 @@ h1, h2 { color: #ffd700; text-align: center; }
 
 #hand-area {
   background: rgba(0,0,0,0.2);
-  padding: 20px;
-  padding-bottom: 10px;
+  padding: 10px;
+  padding-bottom: 4px;
   border-radius: 10px;
   margin-bottom: 14px;
   min-height: 240px;
@@ -330,14 +330,15 @@ h1, h2 { color: #ffd700; text-align: center; }
 }
 #hand-cards {
   display: flex;
+  flex-direction: row !important;
   justify-content: flex-start;
   gap: 12px;
-  flex-wrap: nowrap;
+  flex-wrap: nowrap !important;
   overflow-x: auto;
-  overflow-y: visible;
+  overflow-y: clip;
   scrollbar-width: thin;
   scrollbar-color: #fbbf24 transparent;
-  padding: 8px 4px;
+  padding: 30px 4px 8px;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-x;
