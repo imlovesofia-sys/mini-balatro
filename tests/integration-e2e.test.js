@@ -86,9 +86,10 @@ describe('Full game flow: out of hands → game over', () => {
       lastResult = playHand();
       if (lastResult.blindCleared) break;
     }
-    if (state.roundScore < BLINDS[0].target) {
-      expect(state.phase).toBe('gameover');
-    }
+    // Assert that at least one of the two outcomes triggered
+    const blindCleared = lastResult && lastResult.blindCleared;
+    const gameOver = state.phase === 'gameover';
+    expect(blindCleared || gameOver).toBe(true);
   });
 });
 
@@ -167,16 +168,15 @@ describe('Full game flow: multiple rounds', () => {
       state.roundScore = BLINDS[state.currentBlindIndex].target;
       state.selectedIndices = new Set([0]);
       const playResult = playHand();
-      if (playResult.blindCleared) {
-        const advance = advanceToNextBlind();
-        if (advance.cycleComplete) {
-          expect(advance.cycleComplete).toBe(true);
-          return;
-        }
-        if (advance.cashout) {
-          state.cashoutBreakdown = advance.breakdown;
-          applyCashout();
-        }
+      expect(playResult.blindCleared).toBe(true);
+      const advance = advanceToNextBlind();
+      if (advance.cycleComplete) {
+        expect(advance.cycleComplete).toBe(true);
+        return;
+      }
+      if (advance.cashout) {
+        state.cashoutBreakdown = advance.breakdown;
+        applyCashout();
       }
     }
   });
@@ -444,9 +444,8 @@ describe('Full game flow: shop item generation', () => {
     const items = generateShopItems(state);
     state.shopItems = items;
     const result = buyItem(state, 0);
-    if (result.ok) {
-      expect(state.shopItems[0].sold).toBe(true);
-    }
+    expect(result.ok).toBe(true);
+    expect(state.shopItems[0].sold).toBe(true);
   });
 });
 
@@ -547,8 +546,7 @@ describe('Full game flow: multiple plays per blind', () => {
       playHand();
       scores.push(state.roundScore);
     }
-    if (scores.length === 2) {
-      expect(scores[1]).toBeGreaterThanOrEqual(scores[0]);
-    }
+    expect(scores.length).toBeGreaterThanOrEqual(2);
+    expect(scores[1]).toBeGreaterThanOrEqual(scores[0]);
   });
 });

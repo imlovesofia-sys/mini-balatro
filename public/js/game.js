@@ -19,7 +19,8 @@ export function startRun() {
 }
 
 export function startBlind() {
-  const blind = BLINDS[state.currentBlindIndex];
+  const blind = (state.blinds || BLINDS)[state.currentBlindIndex];
+  if (!blind) return;
   state.roundScore = 0;
   state.hands = STARTING_HANDS + state.extraHandsPerRound;
   state.discards = STARTING_DISCARDS;
@@ -195,7 +196,7 @@ export function playHand() {
   drawCards(state, HAND_SIZE - state.hand.length);
   applySort();
 
-  const blind = BLINDS[state.currentBlindIndex];
+  const blind = (state.blinds || BLINDS)[state.currentBlindIndex];
   if (state.roundScore >= blind.target) {
     state.phase = 'transition';
     return { ok: true, blindCleared: true, scoreDetails: state.lastPlayedHand };
@@ -261,7 +262,7 @@ export function discardHand() {
 }
 
 export function advanceToNextBlind() {
-  const blind = BLINDS[state.currentBlindIndex];
+  const blind = (state.blinds || BLINDS)[state.currentBlindIndex];
   if (!blind) return { error: 'no blind' };
 
   if (blind.boss) {
@@ -272,7 +273,7 @@ export function advanceToNextBlind() {
   const blindReward = BLIND_REWARD;
   const handsRemaining = state.hands;
   const jokerRewards = applyRoundEndRewards(state.jokers, state);
-  const totalEarned = blindReward + handsRemaining + jokerRewards;
+  const totalEarned = blindReward + handsRemaining;
 
   state.cashoutBreakdown = {
     blindReward,
@@ -283,13 +284,14 @@ export function advanceToNextBlind() {
 
   state.currentBlindIndex += 1;
 
-  if (state.currentBlindIndex >= BLINDS.length) {
+  const allBlinds = state.blinds || BLINDS;
+  if (state.currentBlindIndex >= allBlinds.length) {
     if (!state.infiniteMode) {
       state.phase = 'cycle_complete';
       return { cycleComplete: true, breakdown: state.cashoutBreakdown };
     }
     const newBlinds = generateInfiniteAnte(state.currentAnte);
-    BLINDS.push(...newBlinds);
+    state.blinds = [...BLINDS, ...newBlinds];
     state.currentAnte++;
   }
 
@@ -328,7 +330,8 @@ export function leaveShopAndContinue() {
 }
 
 export function getCurrentBlindInfo() {
-  const blind = BLINDS[state.currentBlindIndex];
+  const blind = (state.blinds || BLINDS)[state.currentBlindIndex];
+  if (!blind) return { name: '???', target: 0, boss: false, bossEffect: null, reward: 0 };
   if (!state.pendingBossEffect) {
     state.pendingBossEffect = pickBossEffect();
   }
@@ -349,7 +352,8 @@ export function confirmBlindSelection() {
 
 export function skipBlind() {
   state.currentBlindIndex += 1;
-  if (state.currentBlindIndex >= BLINDS.length) {
+  const allBlinds = state.blinds || BLINDS;
+  if (state.currentBlindIndex >= allBlinds.length) {
     state.phase = 'victory';
     return { victory: true };
   }
@@ -358,6 +362,9 @@ export function skipBlind() {
 }
 
 export function reorderJokers(fromIndex, toIndex) {
+  if (fromIndex < 0 || fromIndex >= state.jokers.length) return;
+  if (toIndex < 0 || toIndex > state.jokers.length) return;
+  if (fromIndex === toIndex) return;
   const [moved] = state.jokers.splice(fromIndex, 1);
   state.jokers.splice(toIndex, 0, moved);
 }
@@ -383,7 +390,8 @@ export function sortHand(mode) {
 }
 
 export function getBlind() {
-  return BLINDS[state.currentBlindIndex];
+  const allBlinds = state.blinds || BLINDS;
+  return allBlinds[state.currentBlindIndex];
 }
 
 export function getBossEffect() {
@@ -395,6 +403,6 @@ export function enterInfiniteMode() {
   state.currentCycle++;
   state.currentAnte++;
   const newBlinds = generateInfiniteAnte(state.currentAnte);
-  BLINDS.push(...newBlinds);
-  state.currentBlindIndex = BLINDS.length - 3;
+  state.blinds = [...BLINDS, ...newBlinds];
+  state.currentBlindIndex = state.blinds.length - 3;
 }

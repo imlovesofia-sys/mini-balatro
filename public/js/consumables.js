@@ -1,4 +1,4 @@
-import { JOKERS, TAROT_CARDS, RANKS, SUITS, MAX_JOKERS, MAX_CONSUMABLES, BOSS_EFFECTS } from './constants.js';
+import { JOKERS, TAROT_CARDS, RANKS, SUITS, MAX_JOKERS, BOSS_EFFECTS } from './constants.js';
 
 function pickRandom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];

@@ -6,6 +6,7 @@ export const state = {
   consumables: [],
   currentBlindIndex: 0,
   bossEffect: null,
+  pendingBossEffect: null,
   money: 0,
   hands: 0,
   discards: 0,
@@ -21,7 +22,6 @@ export const state = {
 
   previousHand: null,
   handsPlayedThisRound: 0,
-  discardCountThisRound: 0,
   consumableUsedThisRound: false,
   playedCardsThisRound: [],
   playedHandTypes: [],
@@ -39,7 +39,9 @@ export const state = {
   startTime: null,
   currentCycle: 1,
   infiniteMode: false,
-  currentAnte: 8
+  currentAnte: 8,
+  cashoutBreakdown: null,
+  blinds: null
 };
 
 export function resetState() {
@@ -50,6 +52,7 @@ export function resetState() {
   state.consumables = [];
   state.currentBlindIndex = 0;
   state.bossEffect = null;
+  state.pendingBossEffect = null;
   state.money = 0;
   state.hands = 0;
   state.discards = 0;
@@ -65,7 +68,6 @@ export function resetState() {
 
   state.previousHand = null;
   state.handsPlayedThisRound = 0;
-  state.discardCountThisRound = 0;
   state.consumableUsedThisRound = false;
   state.playedCardsThisRound = [];
   state.playedHandTypes = [];
@@ -84,4 +86,6 @@ export function resetState() {
   state.currentCycle = 1;
   state.infiniteMode = false;
   state.currentAnte = 8;
+  state.cashoutBreakdown = null;
+  state.blinds = null;
 }

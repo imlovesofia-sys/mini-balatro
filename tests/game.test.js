@@ -354,9 +354,8 @@ describe('playHand', () => {
     state.roundScore = 0;
     state.selectedIndices = new Set([0]);
     const result = playHand();
-    if (state.roundScore < BLINDS[0].target) {
-      expect(result.gameOver).toBe(true);
-    }
+    // With low starting score, should trigger gameOver
+    expect(result.gameOver || state.phase === 'gameover').toBe(true);
   });
 
   it('sets phase to transition on blindCleared', () => {
@@ -375,9 +374,8 @@ describe('playHand', () => {
     state.roundScore = 0;
     state.selectedIndices = new Set([0]);
     const result = playHand();
-    if (result.gameOver) {
-      expect(state.phase).toBe('gameover');
-    }
+    expect(result.gameOver).toBe(true);
+    expect(state.phase).toBe('gameover');
   });
 
   it('clears selectedIndices after playing', () => {

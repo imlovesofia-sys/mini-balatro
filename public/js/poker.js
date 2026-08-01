@@ -1,6 +1,6 @@
 import { POKER_HANDS, RANK_INDEX } from './constants.js';
 
-function rankIdx(r) { return RANK_INDEX[r]; }
+function rankIdx(r) { return r === null || r === undefined ? -1 : (RANK_INDEX[r] ?? -1); }
 
 function countBy(arr, keyFn) {
   const map = new Map();

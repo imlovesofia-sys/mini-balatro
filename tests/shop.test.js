@@ -475,7 +475,7 @@ describe('Shop edge cases', () => {
     expect(state.rerollCost).toBe(8);
   });
 
-  it('money can go negative from onReroll lose-all', () => {
+  it('onReroll lose-all sets money to zero', () => {
     const j24 = { ...JOKERS.find(j => j.id === 'j24') };
     const state = makeState({ money: 10, jokers: [j24] });
     let callCount = 0;

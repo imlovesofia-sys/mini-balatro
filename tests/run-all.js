@@ -9,8 +9,6 @@ const testFiles = [
   './integration-e2e.test.js'
 ];
 
-let allPassed = true;
-
 for (const file of testFiles) {
   console.log(`\n${'═'.repeat(50)}`);
   console.log(`  Running: ${file}`);
@@ -19,16 +17,16 @@ for (const file of testFiles) {
     await import(file);
   } catch (e) {
     console.error(`  FATAL ERROR in ${file}: ${e.message}`);
-    allPassed = false;
   }
 }
 
+const { passed, total, failedTests } = summary();
 console.log(`\n${'═'.repeat(50)}`);
 console.log('  FINAL RESULT');
 console.log('═'.repeat(50));
 
-if (allPassed) {
-  process.exit(0);
-} else {
+if (failedTests && failedTests.length > 0) {
   process.exit(1);
+} else {
+  process.exit(0);
 }

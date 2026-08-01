@@ -5,7 +5,7 @@ import {
   renderPackShopItem, renderPodiumScore, renderPodiumTime, showMessage,
   animateCardsOut, runScoringSequence,
   initHandsReference, initDeckReference,
-  openPackAnimation, selectTarotPack, selectDeckCardPack,
+  openPackAnimation, selectTarotPack,
   flashDeckCard, closePackAnimation, getJokerImageStyle,
   animateDestroy, animateConvert, animateUpgrade, animateDuplicate,
   flashNoSelect
@@ -17,10 +17,10 @@ import { openPack } from './shop.js';
 import { needsSelection, applyTarotDirectly } from './consumables.js';
 
 import {
-  startMusic, toggleMusic, isMusicMuted,
-  toggleSfx, isSfxMuted,
+  startMusic, toggleMusic,
+  toggleSfx,
   sfxClick, sfxBuy, sfxWin, sfxLose, sfxDeal, sfxDiscard,
-  sfxExplosion, sfxWhoosh, sfxApply
+  sfxExplosion, sfxApply
 } from './audio.js';
 
 export function setupApp() {
@@ -110,6 +110,11 @@ export function setupApp() {
     showScreen('screen-menu');
   });
 
+  document.getElementById('btn-save-cycle-time').addEventListener('click', () => {
+    sfxClick();
+    onSaveCycleTime();
+  });
+
   initHandsReference();
   initDeckReference(() => state);
 }
@@ -124,13 +129,16 @@ function showBlindSelect() {
     { type: 'boss', icon: '♥', label: '', cssClass: 'blind-boss' }
   ];
 
-  const currentAnte = BLINDS[state.currentBlindIndex].ante;
-  const anteBlinds = BLINDS.filter(b => b.ante === currentAnte);
+  const blind = (state.blinds || BLINDS)[state.currentBlindIndex];
+  if (!blind) return;
+  const currentAnte = blind.ante;
+  const allBlinds = state.blinds || BLINDS;
+  const anteBlinds = allBlinds.filter(b => b.ante === currentAnte);
   const blindInfo = Game.getCurrentBlindInfo();
 
   anteBlinds.forEach((blindData, idx) => {
     const meta = BLIND_META[idx];
-    const isCurrent = state.currentBlindIndex === BLINDS.indexOf(blindData);
+    const isCurrent = state.currentBlindIndex === allBlinds.indexOf(blindData);
     const bossName = idx === 2 ? (blindInfo.bossEffect ? blindInfo.bossEffect.name : 'Blind do Chefe') : '';
     const bossDesc = idx === 2 && blindInfo.bossEffect ? blindInfo.bossEffect.desc : '';
     const target = blindData.target.toLocaleString('pt-BR');
@@ -254,6 +262,7 @@ let pendingConsumableIndex = null;
 
 export function renderGame(opts = {}) {
   const blind = Game.getBlind();
+  if (!blind) return;
   const boss = Game.getBossEffect();
   const blindPosition = (state.currentBlindIndex % 3) + 1;
   const roundLabel = `Rodada ${blindPosition}/3`;
@@ -355,15 +364,20 @@ async function onPlayHand() {
     sfxWin();
     showMessage('Blind derrotado!');
     setTimeout(async () => {
-      const advance = Game.advanceToNextBlind();
-      if (advance.cycleComplete) {
-        showCycleComplete();
-      } else if (advance.victory) {
-        await showGameOver(true);
-      } else if (advance.cashout) {
-        showCashout(advance.breakdown);
+      try {
+        const advance = Game.advanceToNextBlind();
+        if (advance.cycleComplete) {
+          showCycleComplete();
+        } else if (advance.victory) {
+          await showGameOver(true);
+        } else if (advance.cashout) {
+          showCashout(advance.breakdown);
+        }
+      } catch (e) {
+        console.error('advanceToNextBlind error:', e);
+      } finally {
+        busy = false;
       }
-      busy = false;
     }, 1500);
   } else if (result.gameOver) {
     await showGameOver(false);
@@ -464,6 +478,7 @@ function renderShop() {
   document.getElementById('btn-reroll').textContent = `Reroll ($${state.rerollCost})`;
 
   const blind = Game.getBlind();
+  if (!blind) return;
   const boss = Game.getBossEffect();
   document.getElementById('shop-blind-text').textContent =
     blind.name + (boss ? ` (${boss.name})` : '');
@@ -511,6 +526,7 @@ function renderShop() {
 function onBuy(index) {
   sfxClick();
   const item = state.shopItems[index];
+  if (!item || item.sold) return;
   if (item.kind === 'pack') {
     startPackFlow(index);
     return;
@@ -551,10 +567,10 @@ function getTarotSelectionInfo(tarot) {
     return { needsCards: true, required: count || 1, type: 'upgrade' };
   }
   if (effectType === 'addGold') {
-    return { needsCards: true, required: count || 1, type: 'upgrade' };
+    return { needsCards: true, required: count || 1, type: 'gold' };
   }
   if (effectType === 'addMusical') {
-    return { needsCards: true, required: count || 1, type: 'upgrade' };
+    return { needsCards: true, required: count || 1, type: 'musical' };
   }
   return { needsCards: false, required: 0, type: 'none' };
 }
@@ -936,6 +952,20 @@ async function onSaveScore() {
     showMessage('Placar salvo!');
     await showPodium();
     showScreen('screen-podium');
+  } else {
+    showMessage('Erro ao salvar');
+  }
+}
+
+async function onSaveCycleTime() {
+  const name = document.getElementById('cycle-player-name').value.trim() || 'Anônimo';
+  const elapsed = Date.now() - state.startTime;
+  const minutes = Math.floor(elapsed / 60000);
+  const seconds = Math.floor((elapsed % 60000) / 1000);
+  const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  const res = await submitScore(name, state.totalScore, timeStr);
+  if (res.ok) {
+    showMessage('Tempo salvo!');
   } else {
     showMessage('Erro ao salvar');
   }

@@ -9,7 +9,6 @@ function pick(arr) {
 function weightedPickJoker(available) {
   if (available.length === 0) return null;
   const weights = available.map(j => {
-    if (j.rarity === 'common') return 5;
     if (j.rarity === 'uncommon') return 3;
     return 1;
   });
