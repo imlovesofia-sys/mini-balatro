@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Blefe — Roguelike de Pôquer</title>
   <link rel="stylesheet" href="/css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bungee+Shade&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
 <body>
   <div id="app">
@@ -34,6 +40,25 @@
         <p><strong>Blind do Chefe:</strong> Tem um efeito especial aleatório que dificulta a rodada.</p>
       </div>
       <button id="btn-back-howto">Voltar</button>
+    </section>
+
+    <section id="screen-blind-select" class="screen">
+      <div class="blind-select-inner">
+        <div class="blind-select-title">Escolha seu Blind</div>
+        <div class="blind-select-cards" id="blind-select-cards"></div>
+      </div>
+    </section>
+
+    <section id="screen-cashout" class="screen">
+      <div id="cashout-panel">
+        <div id="cashout-title">BLIND DERROTADO</div>
+        <div id="cashout-lines"></div>
+        <div id="cashout-total">
+          <span>Total Ganho</span>
+          <span id="cashout-total-value">$0</span>
+        </div>
+        <button id="cashout-btn">Coletar</button>
+      </div>
     </section>
 
     <section id="screen-game" class="screen">
@@ -127,7 +152,7 @@
 
       <div id="shop-layout">
         <div class="shop-section" id="shop-jokers-section">
-          <div class="shop-section-label">JOKES</div>
+          <div class="shop-section-label">CURINGAS</div>
           <div id="shop-jokers" class="shop-section-items"></div>
         </div>
 
@@ -157,9 +182,43 @@
       </div>
     </section>
 
+    <section id="screen-cycle-complete" class="screen">
+      <div class="cycle-complete-inner">
+        <div class="cycle-complete-title">CICLO COMPLETO!</div>
+        <div class="cycle-complete-subtitle">Você completou o ciclo <span id="cycle-number">1</span></div>
+        <div class="cycle-complete-stats">
+          <div class="cycle-stat">
+            <div class="cycle-stat-label">Tempo</div>
+            <div class="cycle-stat-value" id="cycle-time">00:00</div>
+          </div>
+          <div class="cycle-stat">
+            <div class="cycle-stat-label">Pontuação</div>
+            <div class="cycle-stat-value" id="cycle-score">0</div>
+          </div>
+          <div class="cycle-stat">
+            <div class="cycle-stat-label">Antes</div>
+            <div class="cycle-stat-value" id="cycle-antes">8</div>
+          </div>
+        </div>
+        <div class="cycle-complete-btns">
+          <button id="btn-infinite-mode" class="cycle-btn cycle-btn-go">Continuar para Modo Infinito</button>
+          <button id="btn-cycle-menu" class="cycle-btn cycle-btn-back">Voltar ao Menu</button>
+        </div>
+      </div>
+    </section>
+
     <section id="screen-podium" class="screen">
       <h2>🏆 Pódio</h2>
-      <ol id="podium-list"></ol>
+      <div class="podium-tabs">
+        <button class="podium-tab active" data-tab="score">Pontuação</button>
+        <button class="podium-tab" data-tab="time">Tempo</button>
+      </div>
+      <div class="podium-tab-content" id="podium-tab-score">
+        <ol id="podium-list-score"></ol>
+      </div>
+      <div class="podium-tab-content" id="podium-tab-time" style="display:none">
+        <ol id="podium-list-time"></ol>
+      </div>
       <button id="btn-back-podium">Voltar</button>
     </section>
   </div>

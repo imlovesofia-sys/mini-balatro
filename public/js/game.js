@@ -1,5 +1,5 @@
 import { state, resetState } from './state.js';
-import { BLINDS, STARTING_MONEY, STARTING_HANDS, STARTING_DISCARDS, HAND_SIZE, BASE_REROLL_COST, BLIND_REWARD, RANK_INDEX, SUITS } from './constants.js';
+import { BLINDS, STARTING_MONEY, STARTING_HANDS, STARTING_DISCARDS, HAND_SIZE, BASE_REROLL_COST, BLIND_REWARD, RANK_INDEX, SUITS, generateInfiniteAnte } from './constants.js';
 import { createDeck, shuffle, drawCards, discardFromHand, recycleCards } from './deck.js';
 import { evaluateBestHand } from './poker.js';
 import { calculateScore, applyRoundEndRewards, calculateSintonia } from './scoring.js';
@@ -8,6 +8,7 @@ import { applyConsumable, pickBossEffect } from './consumables.js';
 
 export function startRun() {
   resetState();
+  state.startTime = Date.now();
   state.deck = createDeck();
   shuffle(state.deck);
   state.money = STARTING_MONEY;
@@ -58,12 +59,25 @@ export function startBlind() {
   recycleCards(state);
 
   if (blind.boss) {
-    state.bossEffect = pickBossEffect();
+    state.bossEffect = state.pendingBossEffect || pickBossEffect();
+    state.pendingBossEffect = null;
     if (state.bossEffect.extraHands) state.hands = Math.max(1, state.hands + state.bossEffect.extraHands);
     if (state.bossEffect.extraDiscards) state.discards = Math.max(1, state.discards + state.bossEffect.extraDiscards);
     if (state.bossEffect.rerollCost) state.rerollCost = state.bossEffect.rerollCost;
   } else {
     state.bossEffect = null;
+    state.pendingBossEffect = null;
+  }
+
+  const hasInversion = state.jokers.some(j => j.effect.type === 'inversion');
+  const balanceJoker = state.jokers.find(j => j.effect.type === 'balance');
+  if (balanceJoker) {
+    state.hands = Math.max(1, Math.floor(state.hands / 2));
+  }
+  if (hasInversion) {
+    const temp = state.hands;
+    state.hands = state.discards;
+    state.discards = temp;
   }
 
   shuffle(state.deck);
@@ -248,31 +262,49 @@ export function discardHand() {
 
 export function advanceToNextBlind() {
   const blind = BLINDS[state.currentBlindIndex];
+  if (!blind) return { error: 'no blind' };
+
   if (blind.boss) {
-    state.totalBossesDefeated++;
-    const ocJoker = state.jokers.find(j => j.effect.type === 'overclock');
-    if (ocJoker) {
-      state.overclockMultiplier -= 0.5;
-      if (state.overclockMultiplier <= 0) {
-        const idx = state.jokers.indexOf(ocJoker);
-        if (idx !== -1) state.jokers.splice(idx, 1);
-      }
-    }
+    state.totalBossesDefeated += 1;
+    state.overclockMultiplier = Math.max(0, state.overclockMultiplier - 0.5);
   }
 
-  state.money += BLIND_REWARD;
-  state.money += state.hands;
-  const reward = applyRoundEndRewards(state.jokers, state);
+  const blindReward = BLIND_REWARD;
+  const handsRemaining = state.hands;
+  const jokerRewards = applyRoundEndRewards(state.jokers, state);
+  const totalEarned = blindReward + handsRemaining + jokerRewards;
+
+  state.cashoutBreakdown = {
+    blindReward,
+    handsRemaining,
+    jokerRewards,
+    totalEarned
+  };
 
   state.currentBlindIndex += 1;
+
   if (state.currentBlindIndex >= BLINDS.length) {
-    state.phase = 'victory';
-    return { victory: true };
+    if (!state.infiniteMode) {
+      state.phase = 'cycle_complete';
+      return { cycleComplete: true, breakdown: state.cashoutBreakdown };
+    }
+    const newBlinds = generateInfiniteAnte(state.currentAnte);
+    BLINDS.push(...newBlinds);
+    state.currentAnte++;
   }
 
+  state.phase = 'cashout';
+  return { cashout: true, breakdown: state.cashoutBreakdown };
+}
+
+export function applyCashout() {
+  const breakdown = state.cashoutBreakdown;
+  if (!breakdown) return;
+  state.money += breakdown.blindReward + breakdown.handsRemaining;
+  state.cashoutBreakdown = null;
   state.phase = 'shop';
   state.shopItems = generateShopItems(state);
-  return { shop: true, reward, bonusMoney: reward };
+  return { shop: true };
 }
 
 export function doBuyItem(index) {
@@ -292,8 +324,42 @@ export function doUseConsumable(index, selectedCards) {
 }
 
 export function leaveShopAndContinue() {
+  return { blind: true };
+}
+
+export function getCurrentBlindInfo() {
+  const blind = BLINDS[state.currentBlindIndex];
+  if (!state.pendingBossEffect) {
+    state.pendingBossEffect = pickBossEffect();
+  }
+  const bossEffect = blind.boss ? state.pendingBossEffect : null;
+  return {
+    name: blind.name,
+    target: blind.target,
+    boss: blind.boss,
+    bossEffect: bossEffect,
+    reward: BLIND_REWARD
+  };
+}
+
+export function confirmBlindSelection() {
   startBlind();
   return { blind: true };
+}
+
+export function skipBlind() {
+  state.currentBlindIndex += 1;
+  if (state.currentBlindIndex >= BLINDS.length) {
+    state.phase = 'victory';
+    return { victory: true };
+  }
+  state.phase = 'blind_select';
+  return { blind: true };
+}
+
+export function reorderJokers(fromIndex, toIndex) {
+  const [moved] = state.jokers.splice(fromIndex, 1);
+  state.jokers.splice(toIndex, 0, moved);
 }
 
 const SUIT_ORDER = { Hearts: 0, Diamonds: 1, Clubs: 2, Spades: 3 };
@@ -322,4 +388,13 @@ export function getBlind() {
 
 export function getBossEffect() {
   return state.bossEffect;
+}
+
+export function enterInfiniteMode() {
+  state.infiniteMode = true;
+  state.currentCycle++;
+  state.currentAnte++;
+  const newBlinds = generateInfiniteAnte(state.currentAnte);
+  BLINDS.push(...newBlinds);
+  state.currentBlindIndex = BLINDS.length - 3;
 }

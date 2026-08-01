@@ -161,6 +161,63 @@ export function renderJokers(jokers, container, onSell = null, state = null) {
         div.classList.toggle('show-sell');
       });
     }
+
+    let isDragging = false;
+
+    div.addEventListener('mousemove', (e) => {
+      if (isDragging) return;
+      const rect = div.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width - 0.5;
+      const y = (e.clientY - rect.top) / rect.height - 0.5;
+      div.style.transform = `rotateY(${x * 15}deg) rotateX(${-y * 15}deg) translateY(-4px) scale(1.05)`;
+    });
+
+    div.addEventListener('mouseleave', () => {
+      if (!isDragging) div.style.transform = '';
+    });
+
+    div.draggable = true;
+    div.dataset.index = idx;
+
+    div.addEventListener('dragstart', (e) => {
+      isDragging = true;
+      div.classList.add('dragging');
+      container.classList.add('drag-active');
+      div.style.transform = '';
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', idx.toString());
+    });
+
+    div.addEventListener('dragend', () => {
+      isDragging = false;
+      div.classList.remove('dragging');
+      container.classList.remove('drag-active');
+      container.querySelectorAll('.joker.drag-over').forEach(j => j.classList.remove('drag-over'));
+    });
+
+    div.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = 'move';
+      container.querySelectorAll('.joker.drag-over').forEach(j => j.classList.remove('drag-over'));
+      div.classList.add('drag-over');
+    });
+
+    div.addEventListener('dragleave', () => {
+      div.classList.remove('drag-over');
+    });
+
+    div.addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      div.classList.remove('drag-over');
+      const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
+      const toIndex = idx;
+      if (fromIndex !== toIndex && window.onJokerReorder) {
+        window.onJokerReorder(fromIndex, toIndex);
+      }
+    });
+
     container.appendChild(div);
   });
 }
@@ -442,16 +499,32 @@ export async function closePackAnimation() {
   modal.className = 'modal-overlay';
 }
 
-export function renderPodium(scores, container) {
+export function renderPodiumScore(scores, container) {
   container.innerHTML = '';
-  if (scores.length === 0) {
-    container.innerHTML = '<li class="empty">Nenhum placar ainda!</li>';
+  const withScore = scores.filter(s => s.score > 0).sort((a, b) => b.score - a.score).slice(0, 10);
+  if (withScore.length === 0) {
+    container.innerHTML = '<li class="empty">Nenhuma pontuação ainda!</li>';
     return;
   }
-  scores.forEach((s, i) => {
+  withScore.forEach((s, i) => {
     const li = document.createElement('li');
     const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
     li.innerHTML = `<span class="medal">${medal}</span> <span class="name">${escapeHTML(s.name)}</span> <span class="score">${s.score.toLocaleString('pt-BR')}</span>`;
+    container.appendChild(li);
+  });
+}
+
+export function renderPodiumTime(scores, container) {
+  container.innerHTML = '';
+  const withTime = scores.filter(s => s.time).sort((a, b) => a.time.localeCompare(b.time)).slice(0, 10);
+  if (withTime.length === 0) {
+    container.innerHTML = '<li class="empty">Nenhum tempo registrado!</li>';
+    return;
+  }
+  withTime.forEach((s, i) => {
+    const li = document.createElement('li');
+    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
+    li.innerHTML = `<span class="medal">${medal}</span> <span class="name">${escapeHTML(s.name)}</span> <span class="podium-time">${s.time}</span>`;
     container.appendChild(li);
   });
 }

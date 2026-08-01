@@ -42,7 +42,7 @@ app.get('/api/scores', async (_req, res) => {
 
 app.post('/api/scores', async (req, res) => {
   if (!SUPABASE_KEY) return res.status(503).json({ error: 'Placar offline' });
-  const { name, score } = req.body || {};
+  const { name, score, time } = req.body || {};
   if (typeof name !== 'string' || typeof score !== 'number' || !isFinite(score) || score < 0) {
     return res.status(400).json({ error: 'Dados inválidos' });
   }
@@ -51,7 +51,8 @@ app.post('/api/scores', async (req, res) => {
       method: 'POST',
       body: JSON.stringify({
         name: name.trim().slice(0, 20) || 'Anônimo',
-        score: Math.floor(score)
+        score: Math.floor(score),
+        time: typeof time === 'string' ? time.slice(0, 8) : null
       }),
       headers: { 'Prefer': 'return=minimal' }
     });

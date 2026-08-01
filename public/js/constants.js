@@ -38,11 +38,20 @@ export function generateBlinds() {
   const blinds = [];
   ANTE_BASES.forEach((base, ante) => {
     const n = ante + 1;
-    blinds.push({ id: `ante${n}-small`, name: `Ante ${n} — Blind Pequeno`, target: base, boss: false, ante: n });
-    blinds.push({ id: `ante${n}-big`, name: `Ante ${n} — Blind Grande`, target: Math.floor(base * 1.5), boss: false, ante: n });
-    blinds.push({ id: `ante${n}-boss`, name: `Ante ${n} — Blind do Chefe`, target: base * 2, boss: true, ante: n });
+    blinds.push({ id: `ante${n}-small`, name: `Blind Pequeno`, target: base, boss: false, ante: n });
+    blinds.push({ id: `ante${n}-big`, name: `Blind Grande`, target: Math.floor(base * 1.5), boss: false, ante: n });
+    blinds.push({ id: `ante${n}-boss`, name: `Blind do Chefe`, target: base * 2, boss: true, ante: n });
   });
   return blinds;
+}
+
+export function generateInfiniteAnte(ante) {
+  const base = Math.floor(100000 * Math.pow(2.5, ante - 9));
+  return [
+    { id: `ante${ante}-small`, name: 'Blind Pequeno', target: base, boss: false, ante: ante },
+    { id: `ante${ante}-big`, name: 'Blind Grande', target: Math.floor(base * 1.5), boss: false, ante: ante },
+    { id: `ante${ante}-boss`, name: 'Blind do Chefe', target: base * 2, boss: true, ante: ante }
+  ];
 }
 
 export const BLINDS = generateBlinds();
@@ -78,7 +87,7 @@ export const JOKERS = [
   { id: 'j28', name: 'Autômato Sophia', rarity: 'rare', cost: 7, spriteIndex: 7,
     effect: { type: 'suitMastery' }, desc: 'Naipe mais descartado vira mestre; +15 fichas por descarte na 1ª carta do naipe que pontuar em cada mão (reseta ao trocar de blind)' },
   { id: 'j29', name: 'Bug de Sintaxe', rarity: 'rare', cost: 8, spriteIndex: 8,
-    effect: { type: 'destroyOnDiscard' }, desc: 'Destrói 1 carta a cada descarte; +0.5X Mult永久' },
+    effect: { type: 'destroyOnDiscard' }, desc: 'Destrói 1 carta a cada descarte; +0.5X Mult permanente' },
   { id: 'j30', name: 'Socket Antigo', rarity: 'uncommon', cost: 5, spriteIndex: 9,
     effect: { type: 'lowRankBonus' }, desc: 'Cartas 2/3/4 → +25 Fichas e +5 Mult' },
   { id: 'j31', name: 'Modo MAX', rarity: 'rare', cost: 9, spriteIndex: 10,
@@ -100,11 +109,17 @@ export const JOKERS = [
   { id: 'j39', name: 'Coringa da Escala', rarity: 'rare', cost: 7, spriteIndex: 18,
     effect: { type: 'rankSequenceBonus' }, desc: 'Se K pontuou antes, Q → ×2 Mult' },
   { id: 'j40', name: 'Coringa Litorâneo', rarity: 'uncommon', cost: 5, spriteIndex: 19,
-    effect: { type: 'suitCombo' }, desc: '♣ e ♦ juntos → +15 Fichas' }
+    effect: { type: 'suitCombo' }, desc: '♣ e ♦ juntos → +15 Fichas' },
+  { id: 'j41', name: 'Inveja', rarity: 'rare', cost: 7, spriteIndex: 21,
+    effect: { type: 'envy' }, desc: 'Copia o efeito do curinga à direita' },
+  { id: 'j42', name: 'Inversão', rarity: 'rare', cost: 7, spriteIndex: 22,
+    effect: { type: 'inversion' }, desc: 'Troca descartes com mãos' },
+  { id: 'j43', name: 'Equilíbrio', rarity: 'uncommon', cost: 6, spriteIndex: 23,
+    effect: { type: 'balance', mult: 25 }, desc: '-metade das mãos; +25 Mult' }
 ];
 
 export const LEGENDARY_JOKERS = [
-  { id: 'j41', name: 'Hatsune Miku', rarity: 'legendary', cost: 20, spriteIndex: 20,
+  { id: 'j44', name: 'Hatsune Miku', rarity: 'legendary', cost: 20, spriteIndex: 20,
     effect: { type: 'mikuMusicalDouble' }, desc: 'Cartas musicais reativadas (sintonia) dão o dobro de Fichas' }
 ];
 

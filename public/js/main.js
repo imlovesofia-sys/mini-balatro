@@ -1,8 +1,8 @@
 import { state } from './state.js';
-import { SUIT_SYMBOL } from './constants.js';
+import { SUIT_SYMBOL, BLINDS } from './constants.js';
 import {
   showScreen, renderHand, renderJokers, renderConsumables,
-  renderPackShopItem, renderPodium, showMessage,
+  renderPackShopItem, renderPodiumScore, renderPodiumTime, showMessage,
   animateCardsOut, runScoringSequence,
   initHandsReference, initDeckReference,
   openPackAnimation, selectTarotPack, selectDeckCardPack,
@@ -43,8 +43,7 @@ export function setupApp() {
     sfxClick();
     startMusic();
     Game.startRun();
-    renderGame();
-    showScreen('screen-game');
+    showBlindSelect();
   });
 
   document.getElementById('btn-podium-menu').addEventListener('click', async () => {
@@ -89,9 +88,166 @@ export function setupApp() {
     showScreen('screen-menu');
   });
 
+  document.querySelectorAll('.podium-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      sfxClick();
+      document.querySelectorAll('.podium-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const target = tab.dataset.tab;
+      document.getElementById('podium-tab-score').style.display = target === 'score' ? '' : 'none';
+      document.getElementById('podium-tab-time').style.display = target === 'time' ? '' : 'none';
+    });
+  });
+
+  document.getElementById('btn-infinite-mode').addEventListener('click', () => {
+    sfxClick();
+    Game.enterInfiniteMode();
+    showBlindSelect();
+  });
+
+  document.getElementById('btn-cycle-menu').addEventListener('click', () => {
+    sfxClick();
+    showScreen('screen-menu');
+  });
+
   initHandsReference();
   initDeckReference(() => state);
 }
+
+function showBlindSelect() {
+  const container = document.getElementById('blind-select-cards');
+  container.innerHTML = '';
+
+  const BLIND_META = [
+    { type: 'small', icon: '▼', label: 'Blind Pequeno', cssClass: 'blind-small' },
+    { type: 'big', icon: '◆', label: 'Blind Grande', cssClass: 'blind-big' },
+    { type: 'boss', icon: '♥', label: '', cssClass: 'blind-boss' }
+  ];
+
+  const currentAnte = BLINDS[state.currentBlindIndex].ante;
+  const anteBlinds = BLINDS.filter(b => b.ante === currentAnte);
+  const blindInfo = Game.getCurrentBlindInfo();
+
+  anteBlinds.forEach((blindData, idx) => {
+    const meta = BLIND_META[idx];
+    const isCurrent = state.currentBlindIndex === BLINDS.indexOf(blindData);
+    const bossName = idx === 2 ? (blindInfo.bossEffect ? blindInfo.bossEffect.name : 'Blind do Chefe') : '';
+    const bossDesc = idx === 2 && blindInfo.bossEffect ? blindInfo.bossEffect.desc : '';
+    const target = blindData.target.toLocaleString('pt-BR');
+    const reward = idx === 2 ? blindInfo.reward + 2 : blindInfo.reward;
+
+    const card = document.createElement('div');
+    card.className = `blind-card ${meta.cssClass}${isCurrent ? '' : ' upcoming'}`;
+
+    const displayName = bossName || meta.label;
+
+    card.innerHTML = `
+      <div class="blind-card-icon">${idx === 0 ? 'SMALL<br>BLIND' : idx === 1 ? 'BIG<br>BLIND' : '♥'}</div>
+      <div class="blind-card-title">${displayName}</div>
+      <div class="blind-card-info">
+        <div class="blind-card-info-label">Meta de pontuação</div>
+        <div class="blind-card-info-value">★ ${target}</div>
+      </div>
+      ${bossDesc ? `<div class="blind-card-effect">${bossDesc}</div>` : '<div class="blind-card-effect">&nbsp;</div>'}
+      <div class="blind-card-info">
+        <div class="blind-card-info-label">Recompensa</div>
+        <div class="blind-card-info-value reward">$${reward}</div>
+      </div>
+      <div class="blind-card-btns">
+        ${isCurrent
+          ? `<button class="btn-select">Selecionar</button>${idx < 2 ? '<button class="btn-skip">Pular</button>' : ''}`
+          : ''
+        }
+      </div>
+    `;
+
+    if (isCurrent) {
+      card.querySelector('.btn-select').addEventListener('click', (e) => {
+        e.stopPropagation();
+        sfxClick();
+        Game.confirmBlindSelection();
+        renderGame();
+        showScreen('screen-game');
+      });
+
+      const skipBtn = card.querySelector('.btn-skip');
+      if (skipBtn) {
+        skipBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          sfxClick();
+          Game.skipBlind();
+          showBlindSelect();
+        });
+      }
+    }
+
+    container.appendChild(card);
+  });
+
+  showScreen('screen-blind-select');
+}
+
+function showCashout(breakdown) {
+  const linesContainer = document.getElementById('cashout-lines');
+  const totalEl = document.getElementById('cashout-total');
+  const totalValueEl = document.getElementById('cashout-total-value');
+  const btn = document.getElementById('cashout-btn');
+
+  linesContainer.innerHTML = '';
+  totalEl.classList.remove('visible');
+  btn.disabled = true;
+  btn.style.opacity = '0.5';
+
+  const lines = [
+    { label: 'Recompensa do Blind', value: `$${breakdown.blindReward}` },
+    { label: 'Mãos Restantes', value: `$${breakdown.handsRemaining}` },
+  ];
+
+  if (breakdown.jokerRewards > 0) {
+    lines.push({ label: 'Bônus de Curinga', value: `$${breakdown.jokerRewards}` });
+  }
+
+  lines.forEach((line, i) => {
+    const div = document.createElement('div');
+    div.className = 'cashout-line';
+    div.innerHTML = `
+      <span class="cashout-line-label">${line.label}</span>
+      <span class="cashout-line-value">${line.value}</span>
+    `;
+    linesContainer.appendChild(div);
+
+    setTimeout(() => {
+      div.classList.add('visible');
+      sfxClick();
+    }, 400 + (i * 350));
+  });
+
+  const totalDelay = 400 + (lines.length * 350) + 200;
+  setTimeout(() => {
+    totalValueEl.textContent = `$${breakdown.totalEarned}`;
+    totalEl.classList.add('visible');
+    sfxClick();
+  }, totalDelay);
+
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+  }, totalDelay + 400);
+
+  btn.onclick = () => {
+    sfxClick();
+    Game.applyCashout();
+    renderShop();
+    showScreen('screen-shop');
+  };
+
+  showScreen('screen-cashout');
+}
+
+window.onJokerReorder = function(fromIndex, toIndex) {
+  Game.reorderJokers(fromIndex, toIndex);
+  renderGame();
+};
 
 let busy = false;
 let pendingConsumableIndex = null;
@@ -99,8 +255,10 @@ let pendingConsumableIndex = null;
 export function renderGame(opts = {}) {
   const blind = Game.getBlind();
   const boss = Game.getBossEffect();
-  document.getElementById('blind-name').textContent = blind.name + (boss ? ` (${boss.name})` : '');
-  document.getElementById('blind-target').textContent = boss ? boss.desc : `Meta: ${blind.target}`;
+  const blindPosition = (state.currentBlindIndex % 3) + 1;
+  const roundLabel = `Rodada ${blindPosition}/3`;
+  document.getElementById('blind-name').textContent = roundLabel + (boss ? ` — ${boss.name}` : '');
+  document.getElementById('blind-target').textContent = `${blind.name} — Meta: ${blind.target}`;
   document.getElementById('round-score').textContent = state.roundScore.toLocaleString('pt-BR');
   document.getElementById('target-value').textContent = blind.target.toLocaleString('pt-BR');
   document.getElementById('progress-fill').style.width =
@@ -198,11 +356,12 @@ async function onPlayHand() {
     showMessage('Blind derrotado!');
     setTimeout(async () => {
       const advance = Game.advanceToNextBlind();
-      if (advance.victory) {
+      if (advance.cycleComplete) {
+        showCycleComplete();
+      } else if (advance.victory) {
         await showGameOver(true);
-      } else if (advance.shop) {
-        renderShop();
-        showScreen('screen-shop');
+      } else if (advance.cashout) {
+        showCashout(advance.breakdown);
       }
       busy = false;
     }, 1500);
@@ -715,8 +874,7 @@ function onReroll() {
 function onLeaveShop() {
   sfxClick();
   Game.leaveShopAndContinue();
-  renderGame();
-  showScreen('screen-game');
+  showBlindSelect();
 }
 
 function onUseConsumable(index) {
@@ -752,9 +910,28 @@ async function showGameOver(victory) {
   showScreen('screen-gameover');
 }
 
+function showCycleComplete() {
+  sfxWin();
+  const elapsed = Date.now() - state.startTime;
+  const minutes = Math.floor(elapsed / 60000);
+  const seconds = Math.floor((elapsed % 60000) / 1000);
+  const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  
+  document.getElementById('cycle-number').textContent = state.currentCycle;
+  document.getElementById('cycle-time').textContent = timeStr;
+  document.getElementById('cycle-score').textContent = state.totalScore.toLocaleString('pt-BR');
+  document.getElementById('cycle-antes').textContent = state.currentAnte;
+  
+  showScreen('screen-cycle-complete');
+}
+
 async function onSaveScore() {
   const name = document.getElementById('player-name').value.trim() || 'Anônimo';
-  const res = await submitScore(name, state.totalScore);
+  const elapsed = Date.now() - state.startTime;
+  const minutes = Math.floor(elapsed / 60000);
+  const seconds = Math.floor((elapsed % 60000) / 1000);
+  const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  const res = await submitScore(name, state.totalScore, timeStr);
   if (res.ok) {
     showMessage('Placar salvo!');
     await showPodium();
@@ -766,7 +943,8 @@ async function onSaveScore() {
 
 async function showPodium() {
   const scores = await fetchScores();
-  renderPodium(scores, document.getElementById('podium-list'));
+  renderPodiumScore(scores, document.getElementById('podium-list-score'));
+  renderPodiumTime(scores, document.getElementById('podium-list-time'));
 }
 
 setupApp();

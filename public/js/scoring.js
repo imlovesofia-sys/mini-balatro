@@ -33,6 +33,7 @@ export function calculateScore(playedCards, scoringIdx, handType, jokers, stateC
     }
 
     jokers.forEach((joker, j) => {
+      if (joker.effect.type === 'envy') return;
       const e = joker.effect;
       const emit = (kind, value) =>
         events.push({ type: 'joker', jokerIndex: j, name: joker.name, kind, value, chips, mult });
@@ -90,9 +91,48 @@ export function calculateScore(playedCards, scoringIdx, handType, jokers, stateC
         }
       }
     });
+
+    jokers.forEach((joker, j) => {
+      if (joker.effect.type !== 'envy') return;
+      const envyIdx = jokers.indexOf(joker);
+      const rightJoker = envyIdx < jokers.length - 1 ? jokers[envyIdx + 1] : null;
+      if (!rightJoker || !rightJoker.effect) return;
+      const re = rightJoker.effect;
+      const emit = (kind, value) =>
+        events.push({ type: 'joker', jokerIndex: j, name: joker.name, kind, value, chips, mult });
+
+      switch (re.type) {
+        case 'perSuit':
+          if (card.suit === re.suit) {
+            if (re.target === 'mult') { mult += re.value; emit('mult', re.value); }
+            else { chips += re.value; emit('chips', re.value); }
+          }
+          break;
+        case 'lowRankBonus':
+          if (RANK_VALUE[card.rank] <= 4) { chips += 25; mult += 5; emit('chips', 25); emit('mult', 5); }
+          break;
+        case 'stoneBonus':
+          if (card.stone) { chips += 30; mult += 10; emit('chips', 30); emit('mult', 10); }
+          break;
+        case 'spadeDoubleScore':
+          if (card.suit === 'Spades') { const sv = card.stone ? 50 : (RANK_VALUE[card.rank] || 0); chips += sv; emit('chips', sv); }
+          break;
+        case 'parityBonus': {
+          const val = card.stone ? 50 : (RANK_VALUE[card.rank] || 0);
+          if (val % 2 === 0) { chips += 10; emit('chips', 10); } else { mult += 4; emit('mult', 4); }
+          break;
+        }
+        case 'rankSequenceBonus': {
+          const prev = stateContext.previousHand;
+          if (prev && prev.cards.some(c => c.rank === 'K') && card.rank === 'Q') { mult *= 2; emit('xmult', 2); }
+          break;
+        }
+      }
+    });
   });
 
   jokers.forEach((joker, j) => {
+    if (joker.effect.type === 'envy') return;
     const e = joker.effect;
     const emit = (kind, value) =>
       events.push({ type: 'joker', jokerIndex: j, name: joker.name, kind, value, chips, mult });
@@ -209,6 +249,11 @@ export function calculateScore(playedCards, scoringIdx, handType, jokers, stateC
       case 'suitMastery': {
         break;
       }
+      case 'balance': {
+        mult += joker.effect.mult || 25;
+        emit('mult', joker.effect.mult || 25);
+        break;
+      }
       case 'perSuit':
       case 'lowRankBonus':
       case 'stoneBonus':
@@ -224,6 +269,79 @@ export function calculateScore(playedCards, scoringIdx, handType, jokers, stateC
       case 'extraSlot':
       case 'mikuMusicalDouble':
         break;
+    }
+  });
+
+  jokers.forEach((joker, j) => {
+    if (joker.effect.type !== 'envy') return;
+    const envyIdx = jokers.indexOf(joker);
+    const rightJoker = envyIdx < jokers.length - 1 ? jokers[envyIdx + 1] : null;
+    if (!rightJoker || !rightJoker.effect) return;
+    const re = rightJoker.effect;
+    const emit = (kind, value) =>
+      events.push({ type: 'joker', jokerIndex: j, name: joker.name, kind, value, chips, mult });
+
+    switch (re.type) {
+      case 'flatMult':
+        mult += re.value;
+        emit('mult', re.value);
+        break;
+      case 'flatChips':
+        chips += re.value;
+        emit('chips', re.value);
+        break;
+      case 'xMult':
+        mult *= re.value;
+        emit('xmult', re.value);
+        break;
+      case 'overclock': {
+        const ocMult = stateContext.overclockMultiplier || 5;
+        if (ocMult > 0) { mult *= ocMult; emit('xmult', ocMult); }
+        break;
+      }
+      case 'perfectDiscard':
+        if (stateContext.perfectDiscardTriggered && stateContext.handsPlayedThisRound === 0) {
+          mult *= 3;
+          emit('xmult', 3);
+        }
+        break;
+      case 'matchBaseChips': {
+        const prev = stateContext.previousHand;
+        if (prev && prev.baseChips === handType.chips) {
+          moneyBonus += 15;
+          emit('money', 15);
+        }
+        break;
+      }
+      case 'sequentialHandBonus': {
+        const prev = stateContext.previousHand;
+        if (prev && prev.handType && prev.handType.id === handType.id && stateContext.handsPlayedThisRound === 1) {
+          const prevMult = prev.finalMult || 1;
+          if (prevMult > 1) { mult *= prevMult; emit('xmult', prevMult); }
+        }
+        break;
+      }
+      case 'shopPurchaseBonus': {
+        const bonus = rightJoker.bonusMult || 0;
+        if (bonus > 0) { mult += bonus; emit('mult', bonus); }
+        break;
+      }
+      case 'destroyOnDiscard': {
+        const xBonus = 1 + (rightJoker.bonusXMult || 0);
+        if (xBonus > 1) { mult *= xBonus; emit('xmult', xBonus); }
+        break;
+      }
+      case 'suitCombo': {
+        const hasClubs = playedCards.some(c => c.suit === 'Clubs');
+        const hasDiamonds = playedCards.some(c => c.suit === 'Diamonds');
+        if (hasClubs && hasDiamonds) { chips += 15; emit('chips', 15); }
+        break;
+      }
+      case 'allBlackHand': {
+        const allBlack = playedCards.length > 0 && playedCards.every(c => c.suit === 'Clubs' || c.suit === 'Spades');
+        if (allBlack) { mult *= 1.5; emit('xmult', 1.5); }
+        break;
+      }
     }
   });
 

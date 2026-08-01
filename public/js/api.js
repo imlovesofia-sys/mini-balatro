@@ -10,12 +10,12 @@ export async function fetchScores() {
   }
 }
 
-export async function submitScore(name, score) {
+export async function submitScore(name, score, time) {
   try {
     const res = await fetch(`${API_BASE}/api/scores`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, score })
+      body: JSON.stringify({ name, score, time })
     });
     if (!res.ok) return { ok: false };
     return await res.json();

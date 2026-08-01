@@ -35,7 +35,11 @@ export const state = {
   destroyedByBug: 0,
   overclockMultiplier: 5,
   hasExtraSlot: false,
-  handsPlayedWithDiamonds: 0
+  handsPlayedWithDiamonds: 0,
+  startTime: null,
+  currentCycle: 1,
+  infiniteMode: false,
+  currentAnte: 8
 };
 
 export function resetState() {
@@ -76,4 +80,8 @@ export function resetState() {
   state.overclockMultiplier = 5;
   state.hasExtraSlot = false;
   state.handsPlayedWithDiamonds = 0;
+  state.startTime = null;
+  state.currentCycle = 1;
+  state.infiniteMode = false;
+  state.currentAnte = 8;
 }
