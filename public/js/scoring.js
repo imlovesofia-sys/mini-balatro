@@ -200,8 +200,9 @@ export function calculateScore(playedCards, scoringIdx, handType, jokers, stateC
         if (prev && prev.handType && prev.handType.id === handType.id && stateContext.handsPlayedThisRound === 1) {
           const prevMult = prev.finalMult || 1;
           if (prevMult > 1) {
-            mult *= prevMult;
-            emit('xmult', prevMult);
+            const bonusMult = Math.floor(prevMult / 2);
+            mult += bonusMult;
+            emit('mult', bonusMult);
           }
         }
         break;

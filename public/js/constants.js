@@ -81,7 +81,7 @@ export const JOKERS = [
   { id: 'j25', name: 'A Rota do Motorista', rarity: 'uncommon', cost: 6, spriteIndex: 4,
     effect: { type: 'shopPurchaseBonus', value: 3 }, desc: '+3 Mult permanente por compra na loja' },
   { id: 'j26', name: 'Orientado a Objetos', rarity: 'rare', cost: 8, spriteIndex: 5,
-    effect: { type: 'sequentialHandBonus' }, desc: 'Mão igual seguida herda ×Mult da anterior' },
+    effect: { type: 'sequentialHandBonus' }, desc: 'Mão igual seguida herda metade do Mult da anterior (soma, não multiplica)' },
   { id: 'j27', name: 'O Terminal', rarity: 'uncommon', cost: 6, spriteIndex: 6,
     effect: { type: 'allBlackHand' }, desc: 'Mão só com ♣/♠ → ×1.5 Mult' },
   { id: 'j28', name: 'Autômato Sophia', rarity: 'rare', cost: 7, spriteIndex: 7,

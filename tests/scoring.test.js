@@ -275,8 +275,8 @@ describe('calculateScore - Phase 3: Envy effects', () => {
     const jokers = [{ name: 'Sequential', effect: { type: 'sequentialHandBonus' } }];
     const stateContext = { previousHand: { handType: { id: 'pair' }, finalMult: 3 }, handsPlayedThisRound: 1 };
     const result = calculateScore([{ rank: '2', suit: 'Hearts' }], new Set([0]), { id: 'pair', chips: 10, mult: 2, tier: 1 }, jokers, stateContext);
-    expect(result.mult).toBe(6);
-    expect(result.score).toBe(72);
+    expect(result.mult).toBe(3); // 2 + floor(3/2) = 2 + 1 = 3
+    expect(result.score).toBe(36); // 12 * 3
   });
 
   it('sequentialHandBonus requires handsPlayedThisRound === 1', () => {
